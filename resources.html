@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>人力資源總覽 | 專案與人力管理</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/phase-bar.css">
+  <link rel="stylesheet" href="css/timeline.css">
+  <link rel="stylesheet" href="css/resources.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__left">
+      <strong>專案與人力管理</strong>
+      <nav class="topnav">
+        <a href="projects.html">專案總覽</a>
+        <a href="resources.html" aria-current="page">人力資源總覽</a>
+      </nav>
+    </div>
+    <div class="topbar__user">
+      <span id="user-email"></span>
+      <button type="button" class="btn btn--ghost" id="logout-btn">登出</button>
+    </div>
+  </header>
+  <main class="page page--wide">
+    <div class="page-head">
+      <h1>人力資源總覽</h1>
+      <div class="head-tools">
+        <span class="count" id="count"></span>
+        <label class="toggle"><input type="checkbox" id="show-projects" checked> 顯示專案配置</label>
+        <div class="seg" id="zoom" role="group" aria-label="時間軸縮放" title="日期尺度(也可以在時間軸上按住 Ctrl 再滾動滑鼠滾輪)">
+          <button type="button" data-zoom="day" aria-pressed="false">日</button>
+          <button type="button" data-zoom="week" aria-pressed="false">週</button>
+          <button type="button" data-zoom="tenday" aria-pressed="false">旬</button>
+          <button type="button" data-zoom="month" aria-pressed="false">月</button>
+          <button type="button" data-zoom="quarter" aria-pressed="true">季</button>
+          <button type="button" data-zoom="year" aria-pressed="false">年</button>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="搜尋姓名或工號" aria-label="搜尋姓名或工號">
+      <div class="chips" id="chips" role="group" aria-label="依職務篩選"></div>
+    </div>
+    <div id="timeline"><div class="state-msg">載入中…</div></div>
+  </main>
+  <script type="module" src="js/pages/resources.js"></script>
+</body>
+</html>

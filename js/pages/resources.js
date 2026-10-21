@@ -1,0 +1,132 @@
+import { requireAuth, signOut } from '../auth.js';
+import { getMembers } from '../api/members.js';
+import { renderResourceTimeline, buildProjectColors } from '../components/resourceTimeline.js';
+import { ZOOMS, ZOOM_UNITS, LABEL_W, MIN_LABEL_W, getLabelW } from '../components/timeAxis.js';
+import { attachTodayHint } from '../components/todayHint.js';
+import { attachBarLabels } from '../components/barLabels.js';
+import { attachWheelZoom } from '../components/wheelZoom.js';
+import { captureAnchor, restoreAnchor } from '../components/scrollAnchor.js';
+import { attachColumnResize } from '../components/columnResize.js';
+import { escapeHtml } from '../utils/escape.js';
+
+const $ = (s) => document.querySelector(s);
+const timelineEl = $('#timeline');
+const chipsEl = $('#chips');
+const searchEl = $('#search');
+const countEl = $('#count');
+
+const store = {
+  get(k, fallback) { try { return localStorage.getItem(k) || fallback; } catch { return fallback; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* 忽略 */ } },
+};
+
+const NO_ROLE = '(未設定)';
+const roleOf = (m) => String(m.role ?? '').trim() || NO_ROLE;
+
+let members = [];
+let activeRole = 'ALL';
+let keyword = '';
+let zoom = store.get('prm.zoom', 'quarter'); // 與專案總覽共用縮放偏好
+let showProjects = store.get('prm.rsProjects', '1') !== '0'; // 是否顯示專案配置(預設顯示);否則只顯示各時期投入%加總
+let projectColors = new Map();
+// 「成員」欄的寬度(使用者拖曳調整後會記住;預設 LABEL_W)
+const LABEL_KEY = 'prm.labelW.resources';
+let labelW = Math.min(600, Math.max(MIN_LABEL_W, Number(store.get(LABEL_KEY, '0')) || LABEL_W));
+if (!(zoom in ZOOMS)) zoom = 'quarter';
+
+// 職務篩選按鈕(依 members.role):只有成員的職務分成「兩類以上」時才顯示。
+// 若大家職務都沒填(都是「未設定」)或全都一樣,點任何按鈕結果都相同,按鈕沒有作用,所以不顯示。
+function renderChips() {
+  const counts = new Map();
+  members.forEach((m) => counts.set(roleOf(m), (counts.get(roleOf(m)) ?? 0) + 1));
+  chipsEl.hidden = counts.size < 2;
+  if (chipsEl.hidden) { chipsEl.innerHTML = ''; activeRole = 'ALL'; return; }
+  const roles = [...counts.keys()].sort((a, b) => (a === NO_ROLE) - (b === NO_ROLE) || a.localeCompare(b));
+  const defs = [['ALL', '全部', members.length], ...roles.map((r) => [r, r, counts.get(r)])];
+  chipsEl.innerHTML = defs.map(([key, label, n]) =>
+    `<button type="button" class="chip" data-role="${escapeHtml(key)}" aria-pressed="${key === activeRole}">${escapeHtml(label)} ${n}</button>`
+  ).join('');
+}
+
+// 依職務、姓名排序;可用職務與關鍵字(姓名、工號)篩選
+function filteredMembers() {
+  const kw = keyword.toLowerCase();
+  return members
+    .filter((m) => (activeRole === 'ALL' || roleOf(m) === activeRole)
+      && (!kw || `${m.name} ${m.employee_id ?? ''}`.toLowerCase().includes(kw)))
+    .sort((a, b) => (roleOf(a) === NO_ROLE) - (roleOf(b) === NO_ROLE) || roleOf(a).localeCompare(roleOf(b)) || a.name.localeCompare(b.name));
+}
+
+function render(keepCenter = false, anchor = null) {
+  const rows = filteredMembers();
+  countEl.textContent = `顯示 ${rows.length} / ${members.length} 位成員`;
+  $('#zoom').querySelectorAll('[data-zoom]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.zoom === zoom)));
+
+  // anchor:縮放時(按鈕或 Ctrl + 滾輪)由呼叫端傳入的錨點 —— 水平保持日期、垂直保持所在的成員列。
+  // 篩選 / 搜尋改變時(keepCenter)只保持水平的畫面中央日期。
+  const old = timelineEl.querySelector('.tl');
+  const keep = anchor ?? (old && keepCenter ? captureAnchor(old, { vertical: false }) : null);
+
+  if (!rows.length) {
+    timelineEl.innerHTML = `<div class="state-msg">${members.length ? '沒有符合條件的成員,請調整搜尋或篩選。' : '還沒有成員。請先到 Supabase 的 Table Editor 新增 members 與 allocations。'}</div>`;
+    return;
+  }
+  timelineEl.innerHTML = renderResourceTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { projectColors, showProjects, labelW });
+  const tl = timelineEl.querySelector('.tl');
+  attachColumnResize(tl, { onChange: (w) => { labelW = w; store.set(LABEL_KEY, String(w)); } }); // 拖曳「成員」欄右緣調整寬度
+  if (keep) restoreAnchor(tl, keep);
+  else tl.scrollLeft = Number(tl.dataset.todayX) - (tl.clientWidth - getLabelW(tl)) * 0.3; // 首次顯示:今天落在可視區 30% 處
+  attachTodayHint(tl); // 今天不在畫面範圍時,日期列顯示紅色箭頭提示方向
+  attachBarLabels(tl); // 名稱標在「目前看得到的最左邊那一段」,捲動時即時更新
+}
+
+async function main() {
+  const session = await requireAuth();
+  if (!session) return;
+
+  $('#user-email').textContent = session.user.email;
+  $('#logout-btn').addEventListener('click', signOut);
+
+  chipsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-role]');
+    if (!btn) return;
+    activeRole = btn.dataset.role;
+    renderChips();
+    render(true);
+  });
+  searchEl.addEventListener('input', () => { keyword = searchEl.value.trim(); render(true); });
+  const projBox = $('#show-projects');
+  projBox.checked = showProjects;
+  projBox.addEventListener('change', () => {
+    showProjects = projBox.checked;
+    store.set('prm.rsProjects', showProjects ? '1' : '0');
+    render(true);
+  });
+  attachWheelZoom(timelineEl, { // Ctrl + 滑鼠滾輪調整日期尺度
+    getKey: () => zoom,
+    onChange: (key, anchor) => {
+      zoom = key;
+      store.set('prm.zoom', zoom);
+      render(true, anchor);
+    },
+  });
+  $('#zoom').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-zoom]');
+    if (!btn || btn.dataset.zoom === zoom) return;
+    zoom = btn.dataset.zoom;
+    store.set('prm.zoom', zoom);
+    const old = timelineEl.querySelector('.tl');
+    render(true, old ? captureAnchor(old) : null); // 按鈕縮放:保持畫面中央的日期與成員列
+  });
+
+  try {
+    members = await getMembers();
+    projectColors = buildProjectColors(members); // 以全部成員計算,篩選時專案顏色不會變
+    renderChips();
+    render(false);
+  } catch (err) {
+    timelineEl.innerHTML = `<div class="state-msg state-msg--error">資料載入失敗:${escapeHtml(err.message)}</div>`;
+  }
+}
+
+main();

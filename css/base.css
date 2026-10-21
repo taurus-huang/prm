@@ -1,0 +1,103 @@
+:root {
+  --bg: #eceff2;
+  --surface: #ffffff;
+  --ink: #16212b;
+  --muted: #566472;
+  --line: #d3d9df;
+  --petrol: #0b5c73;
+  --petrol-soft: #dcebf0;
+  --amber: #f2a900;
+  --danger: #b3261e;
+  --radius: 6px;
+  --font: "IBM Plex Sans", "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+/* 讓 hidden 屬性永遠有效(否則會被 display:grid / flex 等樣式蓋掉) */
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg);
+}
+h1, h2 { margin: 0; line-height: 1.25; }
+a { color: var(--petrol); }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+.btn {
+  font: inherit;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--petrol);
+  background: var(--petrol);
+  color: #fff;
+  cursor: pointer;
+}
+.btn:hover { background: #094a5d; }
+.btn:disabled { opacity: .6; cursor: wait; }
+.btn--ghost { background: transparent; color: var(--petrol); }
+.btn--ghost:hover { background: var(--petrol-soft); }
+
+/* ---------- 登入頁 ---------- */
+.login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.login__panel {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+}
+.login__panel h1 { font-size: 22px; margin-bottom: 4px; }
+.login__panel p { margin: 0 0 24px; color: var(--muted); }
+.field { display: block; margin-bottom: 16px; }
+.field span { display: block; font-weight: 500; margin-bottom: 4px; }
+.field input {
+  width: 100%;
+  font: inherit;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+}
+.field input:focus { border-color: var(--petrol); }
+.login__panel .btn { width: 100%; padding: 10px; }
+.form-error { min-height: 1.6em; margin: 0 0 12px !important; color: var(--danger) !important; }
+
+/* ---------- 共用頂欄 ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--ink);
+  color: #fff;
+}
+.topbar strong { font-size: 16px; font-weight: 600; }
+.topbar__user { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #c5ced6; }
+.topbar .btn--ghost { color: #fff; border-color: #6b7a88; padding: 4px 12px; }
+.topbar .btn--ghost:hover { background: #2a3744; }
+
+.page { max-width: 1120px; margin: 0 auto; padding: 24px; }
+
+/* ---------- 頁面導覽 ---------- */
+.topbar__left { display: flex; align-items: center; gap: 28px; }
+.topnav { display: flex; gap: 4px; }
+.topnav a {
+  padding: 4px 12px; border-radius: var(--radius);
+  font-size: 14px; color: #c5ced6; text-decoration: none;
+}
+.topnav a:hover { background: #2a3744; color: #fff; }
+.topnav a[aria-current="page"] { background: #2a3744; color: #fff; font-weight: 600; }

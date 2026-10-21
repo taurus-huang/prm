@@ -1,0 +1,35 @@
+/* 加總視圖的警示框線顏色(門檻值本身在 js/utils/constants.js 的 LOAD_THRESHOLDS) */
+:root {
+  --load-high: #d32f2f; /* 加總超過上限:紅框 */
+  --load-low: #1565c0;  /* 加總低於下限:藍框 */
+}
+
+/* ---------- 人力資源總覽:成員的配置長條 ---------- */
+.rs__bar {
+  position: absolute; height: 22px;
+  box-sizing: border-box; border-radius: 4px;
+  display: flex; align-items: center;
+}
+/* 文字黏在可視區左側,橫向捲動時仍看得到 */
+.rs__text {
+  position: sticky; left: var(--label-w);
+  padding: 0 6px; font-size: 12px; font-weight: 500; line-height: 22px; white-space: nowrap;
+}
+.badge--role { background: #e6edf2; color: #3b4753; }
+
+/* 同一專案、日期相連的配置:銜接處不要圓角 */
+.rs__bar.join-l { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.rs__bar.join-r { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+/* 加總超過上限 / 低於下限的區段:用外框框出(framed 的長條疊在相鄰長條之上,框線才不會被蓋住) */
+.rs__bar--high { outline: 2px solid var(--load-high); outline-offset: 1px; z-index: 1; }
+.rs__bar--low { outline: 2px solid var(--load-low); outline-offset: 1px; z-index: 1; }
+
+/* 顯示專案配置時:加總超過上限 / 低於下限(含空檔)的區段,用外框框在該成員所有專案長條上方
+   pointer-events:none 讓滑鼠仍可指到下方的長條看提示 */
+.rs__frame {
+  position: absolute; z-index: 2; pointer-events: none;
+  box-sizing: border-box; border: 2px solid; border-radius: 5px;
+}
+.rs__frame--high { border-color: var(--load-high); }
+.rs__frame--low { border-color: var(--load-low); }

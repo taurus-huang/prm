@@ -1,0 +1,47 @@
+/* ---------- 共用:頁首、搜尋列、徽章、訊息(專案列表與階段進度條已隨「列表模式」移除) ---------- */
+.page-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.page-head h1 { font-size: 22px; }
+.page-head .count { color: var(--muted); }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.toolbar input[type="search"] {
+  font: inherit;
+  padding: 7px 12px;
+  min-width: 240px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit;
+  font-size: 14px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--petrol); border-color: var(--petrol); color: #fff; }
+
+.badge {
+  display: inline-block;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--petrol-soft);
+  color: var(--petrol);
+}
+.badge--BD { background: #e6e9f3; color: #3a4a8a; }
+.badge--MP { background: #dff1e6; color: #1f6a3f; }
+.badge--Pending { background: #e8ebee; color: #56626d; }
+
+.state-msg { padding: 32px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }
+.state-msg--error { color: var(--danger); border-color: var(--danger); }
+
+@media (max-width: 760px) {
+  .page { padding: 16px; }
+  .toolbar input[type="search"] { width: 100%; min-width: 0; }
+}

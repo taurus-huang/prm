@@ -1,0 +1,212 @@
+/* ---------- 檢視切換 / 縮放 ---------- */
+.page--wide { max-width: none; }
+.head-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
+.seg button {
+  font: inherit; font-size: 14px; padding: 5px 14px;
+  border: 0; border-right: 1px solid var(--line);
+  background: #fff; color: var(--ink); cursor: pointer;
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--petrol); color: #fff; }
+
+.toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; font-size: 14px; cursor: pointer; user-select: none;
+  border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+}
+.toggle input { accent-color: var(--petrol); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+
+/* ---------- 時間軸 ---------- */
+.tl {
+  --head-h: 54px;
+  --row-h: 76px;
+  --bar-top: 22px;
+  --bar-h: 22px;
+  overflow: auto;
+  max-height: calc(100vh - 230px);
+  min-height: 160px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.tl__inner { position: relative; }
+
+.tl__head {
+  display: flex;
+  position: sticky; top: 0; z-index: 4;
+  height: var(--head-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.tl__corner {
+  position: sticky; left: 0; z-index: 5;
+  flex: none; width: var(--label-w);
+  display: flex; align-items: center; justify-content: center; /* 標題(「專案」/「成員」)水平、垂直置中 */
+  padding: 0 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  font-weight: 600; color: var(--muted);
+}
+.tl__axis { position: relative; flex: none; }
+.tl__tick {
+  position: absolute; top: 0; height: 100%;
+  box-sizing: border-box;
+  padding: 7px 0 0;
+  text-align: center;
+  border-left: 1px solid var(--line);
+  font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden;
+}
+.tl__today-flag {
+  position: absolute; bottom: 5px;
+  transform: translateX(-50%);
+  padding: 0 8px; border-radius: 999px;
+  background: var(--danger); color: #fff;
+  font-size: 11px; font-weight: 600; white-space: nowrap; z-index: 2;
+}
+
+.tl__row { display: flex; height: var(--row-h); border-bottom: 1px solid #e6eaee; }
+.tl__row:last-of-type { border-bottom: 0; }
+.tl__label {
+  position: sticky; left: 0; z-index: 3;
+  flex: none; width: var(--label-w);
+  padding: 8px 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  overflow: hidden;
+}
+.tl__model { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl__sub { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); min-width: 0; }
+.tl__customer { font-weight: 400; color: #3b4753; }
+.tl__modelname { font-weight: 600; }
+
+.tl__track { position: relative; flex: none; }
+.tl__undated {
+  position: sticky; left: calc(var(--label-w) + 12px);
+  display: inline-block; line-height: var(--row-h);
+  font-size: 13px; color: var(--muted);
+}
+
+/* 格線與今天線:蓋在所有列上方、名稱欄下方 */
+.tl__overlay {
+  position: absolute; z-index: 2; pointer-events: none;
+  left: var(--label-w); top: var(--head-h); bottom: 0;
+}
+.tl__gl { position: absolute; top: 0; bottom: 0; width: 1px; background: #e6eaee; }
+.tl__today { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--danger); }
+
+/* 專案橫條:內部不填色,只有外框(顏色依專案狀態) */
+.tl__bar {
+  position: absolute; top: var(--bar-top); height: var(--bar-h);
+  box-sizing: border-box;
+  border: 2px solid var(--petrol);
+  border-radius: 4px;
+  background: transparent;
+}
+.tl__bar--BD { border-color: #4a5bb0; }
+.tl__bar--NPI { border-color: var(--petrol); }
+.tl__bar--MP { border-color: #2e7d4f; }
+.tl__bar--Pending { border-color: #8b97a3; border-style: dashed; }
+
+/* 人員配置:實心長條(顏色深淺 = 投入 %),每位成員一列,畫在專案長條內 */
+.tl__alloc {
+  position: absolute; height: 14px;
+  box-sizing: border-box; border-radius: 3px;
+  display: flex; align-items: center;
+}
+.tl__al {
+  position: sticky; left: var(--label-w);
+  padding: 0 5px; font-size: 11px; line-height: 14px; white-space: nowrap;
+}
+
+/* 階段標記:日期在長條上方、名稱在長條下方,位置對齊 target_date */
+.tl__ms { position: absolute; top: 0; width: 0; height: var(--row-h); z-index: 1; }
+.tl__ms i {
+  position: absolute; left: -5px; top: calc(var(--bar-top) + var(--bar-h) / 2 - 5px);
+  width: 10px; height: 10px; transform: rotate(45deg);
+  background: var(--petrol); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--petrol); /* 所有 milestone 同一個顏色 */
+}
+
+.tl__md, .tl__mn {
+  position: absolute; left: 0; transform: translateX(-50%);
+  white-space: nowrap; font-style: normal; line-height: 14px;
+}
+.tl__md {
+  bottom: calc(var(--row-h) - var(--bar-top) + 3px + var(--lv) * 15px);
+  font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.tl__mn {
+  top: calc(var(--bar-top) + var(--bar-h) + 5px + var(--lv) * 15px);
+  font-size: 12px; font-weight: 600; color: var(--ink);
+}
+
+/* 專案長條較高時:菱形上下延伸縱線,連到長條的上下邊框(外圍白邊讓線在任何顏色的人力配置條上都看得見) */
+.tl__vline {
+  position: absolute; left: -1px;
+  top: var(--bar-top); height: var(--bar-h); width: 2px;
+  background: var(--petrol);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .85);
+}
+
+/* 標籤錯開時,用細線連回長條 */
+.tl__stem { position: absolute; left: 0; width: 1px; background: #aab4be; }
+.tl__stem--up { bottom: calc(var(--row-h) - var(--bar-top)); height: calc(3px + var(--lv) * 15px); }
+.tl__stem--dn { top: calc(var(--bar-top) + var(--bar-h)); height: calc(5px + var(--lv) * 15px); }
+
+@media (max-width: 760px) { .tl { max-height: none; } }
+
+/* 同一專案/同一人、日期相連的配置:銜接處不要圓角 */
+.tl__alloc.join-l { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.tl__alloc.join-r { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+
+/* 「今天」不在目前畫面範圍時,日期列最左/最右顯示的紅色箭頭 */
+.tl__today-arrow {
+  position: absolute; bottom: 5px; z-index: 6;
+  height: 18px; padding: 0 9px;
+  border: 0; border-radius: 999px;
+  background: var(--danger); color: #fff;
+  font: inherit; font-size: 11px; font-weight: 600; line-height: 18px; white-space: nowrap;
+  cursor: pointer;
+}
+.tl__today-arrow:hover { background: #8f1c15; }
+
+/* ---------- 細尺度(日 / 週 / 旬):兩層日期列 ---------- */
+/* 上層:年月(文字黏在可視範圍左側) */
+.tl__band {
+  position: absolute; top: 0; height: 22px; box-sizing: border-box;
+  border-left: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  font-size: 12px; font-weight: 600; line-height: 21px; color: var(--ink); white-space: nowrap;
+}
+.tl__band-label {
+  position: sticky; left: var(--label-w);
+  display: inline-block; max-width: 100%; box-sizing: border-box; overflow: hidden;
+  padding: 0 8px;
+}
+/* 下層:日 / 週 / 旬 */
+.tl__tick--sub { top: 22px; height: calc(100% - 22px); padding-top: 3px; }
+.tl__d { display: block; font-size: 12px; line-height: 15px; color: var(--ink); }
+.tl__w { display: block; font-size: 11px; line-height: 14px; color: var(--muted); }
+
+/* 日尺度:週六、週日與國定假日 */
+.tl__tick--off { background: rgba(86, 100, 114, .14); }
+.tl__tick--off .tl__d, .tl__tick--off .tl__w { color: var(--danger); font-weight: 600; }
+.tl__shade { position: absolute; z-index: 0; pointer-events: none; left: var(--label-w); top: var(--head-h); bottom: 0; }
+.tl__off { position: absolute; top: 0; bottom: 0; background: rgba(86, 100, 114, .10); }
+
+/* ---------- 左側名稱欄的寬度調整把手(標題格右緣) ---------- */
+.tl__resize {
+  position: absolute; top: 0; right: -5px; z-index: 7;
+  width: 11px; height: 100%;
+  cursor: col-resize; touch-action: none;
+}
+.tl__resize::after { /* 平常看不到,滑鼠移上去或拖曳時顯示一條粗線 */
+  content: ''; position: absolute; left: 4px; top: 18%; width: 3px; height: 64%;
+  border-radius: 2px; background: transparent; transition: background .12s;
+}
+.tl__resize:hover::after, .tl__resize:focus-visible::after, .tl--resizing .tl__resize::after { background: var(--petrol); }
+.tl--resizing, .tl--resizing * { cursor: col-resize !important; user-select: none; }
+
+/* 名稱欄底下補上列分隔線的顏色:名稱欄是固定在左側、蓋在日期軌道上方的,
+   列與列之間 1px 的分隔線沒被它蓋住,捲到欄位底下的「今天」紅線就會從那條縫露出來 */
+.tl__label { box-shadow: 0 1px 0 #e6eaee; }
+.tl__row:last-of-type .tl__label { box-shadow: none; }
