@@ -14,7 +14,7 @@ function hslToRgb(h, s, l) {
 
 // 同一對象用同一色相;pct 越高顏色越深。文字顏色依背景明暗自動選白或深色
 export function allocColor(pct, hue) {
-  const l = 84 - 52 * (pct / 100); // 0% → 84%(淺),100% → 32%(深)
+  const l = 95 - 65 * (pct / 100); // 0% → 84%(淺),100% → 32%(深)
   const [r, g, b] = hslToRgb(hue, 0.55, l / 100);
   const lin = (v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
   const lum = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);

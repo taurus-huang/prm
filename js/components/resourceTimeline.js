@@ -3,7 +3,7 @@ import { dayIndex, ymd } from '../utils/date.js';
 import { escapeHtml } from '../utils/escape.js';
 import { allocColor, hueForIndex } from '../utils/color.js';
 import { markJoins, joinClass } from '../utils/joins.js';
-import { LOAD_THRESHOLDS } from '../utils/constants.js';
+import { LOAD_THRESHOLDS, SUM_COLOR_MAX } from '../utils/constants.js';
 import { LABEL_W, ZOOMS, mmdd, textW, computeRange, buildAxis, RESIZE_HANDLE } from './timeAxis.js';
 
 // 版面常數(px)
@@ -132,7 +132,7 @@ function levelOf(sum) {
   return '';
 }
 
-const SUM_HUE = 200; // 加總視圖:單一色相,加總 % 越高顏色越深(超過 100% 以最深色顯示,標籤仍顯示實際數字)
+const SUM_HUE = 200; // 加總視圖:單一色相,加總 % 越高顏色越深(範圍 0% ~ SUM_COLOR_MAX%,超過的以最深色顯示,標籤仍顯示實際數字)
 
 function renderSumBars(segs, x, ppd) {
   const items = segs.map((sg) => ({ key: 'sum', from: sg.from, to: sg.to }));
@@ -141,8 +141,10 @@ function renderSumBars(segs, x, ppd) {
     const width = Math.max(4, (sg.to - sg.from + 1) * ppd);
     const label = `${sg.sum}%`;
     const text = width >= textW(label, 12) + 10 ? label : '';
-    const { bg, fg } = allocColor(Math.min(100, sg.sum), SUM_HUE);
-    const level = levelOf(sg.sum);
+    // allocColor 的深淺是以 0~100 計算,所以把 0~SUM_COLOR_MAX% 的加總換算成 0~100 的比例
+    const { bg, fg } = allocColor(Math.min(100, (sg.sum / SUM_COLOR_MAX) * 100), SUM_HUE);
+    // const level = levelOf(sg.sum);
+	const level = '';
     const note = level === 'high' ? `(超過 ${LOAD_THRESHOLDS.high}%)` : level === 'low' ? `(低於 ${LOAD_THRESHOLDS.low}%)` : '';
     const detail = sg.parts.length ? sg.parts.join('、') : '無配置(有空)';
     return `<div class="rs__bar${joinClass(items[i])}${level ? ` rs__bar--${level}` : ''}" style="left:${x(sg.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:${PAD}px;background:${bg};color:${fg}"
@@ -181,7 +183,8 @@ function renderRow(m, ctx) {
     const n = lanes.length;
     if (n) rowH = Math.max(MIN_ROW_H, PAD * 2 + n * LANE_H + (n - 1) * LANE_GAP);
     const bars = n ? renderBars(lanes, ctx.x, ctx.ppd, ctx.colors, m.id) : none;
-    track = bars + renderFrames(sumSegments(items, range), n, ctx.x, ctx.ppd);
+    // track = bars + renderFrames(sumSegments(items, range), n, ctx.x, ctx.ppd);
+	track = bars;
   } else {
     // 空檔(加總 0%)只有在會被視為「偏低」時才畫出來(low > 0);否則維持不畫
     const segs = sumSegments(items, levelOf(0) === 'low' ? range : null);
