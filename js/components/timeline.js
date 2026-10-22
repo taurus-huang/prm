@@ -18,7 +18,6 @@ const MAX_LEVEL = 2;    // 最多錯開 3 層
 const LANE_H = 14;      // 人員配置:每位成員一列的高度
 const LANE_GAP = 2;     // 人員配置:列與列的間距
 
-const STATE_TEXT = { done: '已完成', current: '進行中', upcoming: '尚未開始' };
 
 /* ---------- 里程碑整理 ---------- */
 
@@ -29,27 +28,17 @@ function phaseRank(name) {
   return i < 0 ? 99 : i;
 }
 
-// 取出所有有日期的里程碑(名稱是自由文字:KO、POC、EVT (Slim)…都會顯示),依日期排序並判斷狀態
-function getMilestones(p, todayIdx) {
-  const list = (p.milestones || [])
+// 取出所有有日期的里程碑(名稱是自由文字:KO、POC、EVT (Slim)…都會顯示),依日期排序
+function getMilestones(p) {
+  return (p.milestones || [])
     .filter((m) => m.target_date)
     .map((m) => ({
       name: String(m.phase ?? '').trim() || '(未命名)',
       date: m.target_date,
       idx: dayIndex(m.target_date),
-      note: m.note || '',
+      note: String(m.note ?? '').trim(),
     }))
     .sort((a, b) => a.idx - b.idx || phaseRank(a.name) - phaseRank(b.name));
-
-  // 狀態:MP 專案全部完成;其餘 → 已過日期=完成,NPI 專案中第一個尚未到的=進行中
-  const status = isPending(p) ? 'Pending' : p.status; // 暫緩中的專案不標示進行中階段
-  let currentFound = false;
-  list.forEach((m) => {
-    if (status === 'MP' || m.idx < todayIdx) { m.state = 'done'; return; }
-    if (status === 'NPI' && !currentFound) { m.state = 'current'; currentFound = true; return; }
-    m.state = 'upcoming';
-  });
-  return list;
 }
 
 /* ---------- 版面計算 ---------- */
@@ -173,7 +162,7 @@ function renderRow(row, ctx) {
     const width = Math.max(6, (ext.to - ext.from) * ppd);
     const markers = ms.map((m) => `
       <span class="tl__ms" style="left:${x(m.idx).toFixed(1)}px;--lv:${m.level}"
-        title="${escapeHtml(m.name)} 目標日 ${m.date}(${STATE_TEXT[m.state]})${m.note ? ' — ' + escapeHtml(m.note) : ''}">
+        title="${escapeHtml(m.name)} : ${escapeHtml(m.date)}${m.note ? ` , ${escapeHtml(m.note)}` : ''}">
         ${tall ? '<span class="tl__vline"></span>' : ''}
         ${m.level ? '<s class="tl__stem tl__stem--up"></s><s class="tl__stem tl__stem--dn"></s>' : ''}
         <em class="tl__md">${mmdd(m.idx)}</em>
@@ -218,7 +207,7 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
   const rows = [...projects]
     .sort((a, b) => (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999'))
     .map((p) => {
-      const ms = getMilestones(p, todayIdx);
+      const ms = getMilestones(p);
       assignLevels(ms, x);
       const lanes = buildLanes(p);
       return { p, ms, lanes, ext: barExtent(p, ms, lanes, todayIdx) };

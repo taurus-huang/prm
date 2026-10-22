@@ -64,4 +64,4 @@
 - 專案總覽與人力資源總覽的欄寬各自獨立,並記在瀏覽器裡(重新整理仍保留)。預設寬度與下限在 `js/components/timeAxis.js` 的 `LABEL_W`、`MIN_LABEL_W`;拖曳邏輯在 `js/components/columnResize.js`。
 
 ## 圖例與 milestone 顏色
-兩個頁面都不顯示圖例說明。專案總覽的 milestone(菱形、延伸縱線、名稱)不依「已完成 / 進行中 / 尚未開始」區分顏色,一律同一個顏色(`css/timeline.css` 的 `.tl__ms i`、`.tl__vline`,色票為 `var(--petrol)`);狀態仍會顯示在 milestone 的滑鼠提示文字中。
+兩個頁面都不顯示圖例說明。專案總覽的 milestone(菱形、延伸縱線、名稱)不依「已完成 / 進行中 / 尚未開始」區分顏色,一律同一個顏色(`css/timeline.css` 的 `.tl__ms i`、`.tl__vline`,色票為 `var(--petrol)`);滑鼠停在 milestone 的菱形上會顯示「名稱 : 日期 , note」(沒有 note 時只有「名稱 : 日期」),例如 `PVT : 2027-02-01 , 1000 pcs`。
