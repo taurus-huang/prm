@@ -1,4 +1,4 @@
-import { requireAuth, signOut, getRole } from '../auth.js';
+import { requireAuth, signOut, getRole, isAdmin } from '../auth.js';
 import { getMembers } from '../api/members.js';
 import { renderResourceTimeline, buildProjectColors } from '../components/resourceTimeline.js';
 import { ZOOMS, ZOOM_UNITS, LABEL_W, MIN_LABEL_W, getLabelW } from '../components/timeAxis.js';
@@ -10,6 +10,7 @@ import { captureAnchor, restoreAnchor } from '../components/scrollAnchor.js';
 import { attachColumnResize } from '../components/columnResize.js';
 import { escapeHtml } from '../utils/escape.js';
 import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
+import { MEMBER_SORTS, DEFAULT_MEMBER_SORT, DEFAULT_MEMBER_DIR } from '../utils/memberSort.js';
 
 const $ = (s) => document.querySelector(s);
 const timelineEl = $('#timeline');
@@ -28,6 +29,12 @@ const roleOf = (m) => String(m.role ?? '').trim() || NO_ROLE;
 let members = [];
 let activeRole = 'ALL';
 let keyword = '';
+// 排序只有管理員能用;非管理員永遠是預設順序(依職務、姓名)。選擇會記住
+let canSort = false;
+let sortKey = store.get('prm.rsSort', DEFAULT_MEMBER_SORT);
+if (!(sortKey in MEMBER_SORTS)) sortKey = DEFAULT_MEMBER_SORT;
+let sortDir = store.get('prm.rsSortDir', DEFAULT_MEMBER_DIR);
+if (sortDir !== 'asc' && sortDir !== 'desc') sortDir = DEFAULT_MEMBER_DIR;
 let zoom = store.get('prm.zoom', 'quarter'); // 與專案總覽共用縮放偏好
 // 是否顯示專案配置(預設顯示);不顯示時只顯示各時期投入%加總。可整體切換(右上角 tri-state checkbox),也可雙擊某位成員右邊的空白處單獨切換
 const rowToggle = createRowToggle(store.get('prm.rsProjects', '1') !== '0');
@@ -57,7 +64,9 @@ function filteredMembers() {
   return members
     .filter((m) => (activeRole === 'ALL' || roleOf(m) === activeRole)
       && (!kw || `${m.name} ${m.employee_id ?? ''}`.toLowerCase().includes(kw)))
-    .sort((a, b) => (roleOf(a) === NO_ROLE) - (roleOf(b) === NO_ROLE) || roleOf(a).localeCompare(roleOf(b)) || a.name.localeCompare(b.name));
+    .sort((a, b) => (canSort && sortKey in MEMBER_SORTS)
+      ? MEMBER_SORTS[sortKey].compare(a, b, sortDir === 'desc' ? -1 : 1)
+      : (roleOf(a) === NO_ROLE) - (roleOf(b) === NO_ROLE) || roleOf(a).localeCompare(roleOf(b)) || a.name.localeCompare(b.name));
 }
 
 function render(keepCenter = false, anchor = null) {
@@ -90,6 +99,26 @@ async function main() {
 
   $('#user-email').textContent = `${session.user.email} (${getRole(session)})`; // 帳號 email 旁顯示身份(admin / viewer …)
   $('#logout-btn').addEventListener('click', signOut);
+
+  canSort = isAdmin(session); // 排序功能僅限管理員
+  $('#sort-box').hidden = !canSort;
+  if (canSort) {
+    const sortEl = $('#sort');
+    const dirEl = $('#sort-dir');
+    sortEl.innerHTML = Object.entries(MEMBER_SORTS).map(([k, s]) => `<option value="${k}">${escapeHtml(s.label)}</option>`).join('');
+    sortEl.value = sortKey;
+    dirEl.value = sortDir;
+    sortEl.addEventListener('change', () => {
+      sortKey = sortEl.value;
+      store.set('prm.rsSort', sortKey);
+      render(true);
+    });
+    dirEl.addEventListener('change', () => {
+      sortDir = dirEl.value;
+      store.set('prm.rsSortDir', sortDir);
+      render(true);
+    });
+  }
 
   chipsEl.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-role]');

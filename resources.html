@@ -41,6 +41,8 @@
     </div>
     <div class="toolbar">
       <input type="search" id="search" placeholder="搜尋姓名或工號" aria-label="搜尋姓名或工號">
+      <label class="sort" id="sort-box" title="排序方式(僅管理員)" hidden>排序 <select id="sort" aria-label="排序方式"></select>
+        <select id="sort-dir" aria-label="遞增或遞減"><option value="asc">遞增</option><option value="desc">遞減</option></select></label>
       <div class="chips" id="chips" role="group" aria-label="依職務篩選"></div>
     </div>
     <div id="timeline"><div class="state-msg">載入中…</div></div>
