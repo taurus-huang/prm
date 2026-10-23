@@ -178,7 +178,7 @@ function renderRow(m, ctx) {
   const none = '<span class="tl__undated">目前沒有配置</span>';
   let rowH = MIN_ROW_H;
   let track;
-  if (ctx.showProjects) {
+  if (ctx.isShown(m.id)) {
     const lanes = packLanes(items);
     const n = lanes.length;
     if (n) rowH = Math.max(MIN_ROW_H, PAD * 2 + n * LANE_H + (n - 1) * LANE_GAP);
@@ -192,7 +192,7 @@ function renderRow(m, ctx) {
   }
   const role = String(m.role ?? '').trim();
   return `
-    <div class="tl__row" style="--row-h:${rowH}px">
+    <div class="tl__row" data-id="${escapeHtml(m.id)}" style="--row-h:${rowH}px">
       <div class="tl__label" title="${memberHintTitle(m)}">
         <div class="tl__model">${escapeHtml(m.name)}</div>
         <div class="tl__sub">${role ? `<span class="badge badge--role">${escapeHtml(role)}</span>` : ''}</div>
@@ -206,7 +206,7 @@ function renderRow(m, ctx) {
  * @param members  含 allocations(及其 projects)的成員陣列,依顯示順序排列
  * @param ppd      每天幾個 px(縮放比例)
  * @param unit     刻度單位:'month' | 'quarter' | 'year'
- * @param opts     { projectColors: 專案顏色表, showProjects: 是否顯示專案配置(預設 true;false 時只顯示各時期投入%加總) }
+ * @param opts     { projectColors: 專案顏色表, showProjects: 是否顯示專案配置(true/false,或 (成員id) => boolean 逐成員決定;不顯示時只顯示各時期投入%加總) }
  */
 export function renderResourceTimeline(members, ppd = ZOOMS.quarter, unit = 'quarter', opts = {}) {
   if (!members.length) return '<div class="state-msg">沒有符合條件的成員。</div>';
@@ -220,7 +220,7 @@ export function renderResourceTimeline(members, ppd = ZOOMS.quarter, unit = 'qua
   const x = (i) => (i - startIdx) * ppd;
   const { ticks, gridlines, band, shade, headH } = buildAxis({ startIdx, end, ppd, unit });
   const todayX = x(todayIdx + dayFraction()); // 紅線畫在「今天那一格裡、依現在幾點幾分的比例」的位置
-  const ctx = { x, ppd, totalW, colors, showProjects: opts.showProjects !== false, startIdx, endIdx: end - 1 };
+  const ctx = { x, ppd, totalW, colors, isShown: typeof opts.showProjects === 'function' ? opts.showProjects : () => opts.showProjects !== false, startIdx, endIdx: end - 1 };
 
   return `
     <div class="tl" data-start-idx="${startIdx}" data-ppd="${ppd}" data-today-x="${todayX.toFixed(1)}" style="--label-w:${labelW}px${headH ? `;--head-h:${headH}px` : ''}">

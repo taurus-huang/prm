@@ -9,6 +9,7 @@ import { attachWheelZoom } from '../components/wheelZoom.js';
 import { captureAnchor, restoreAnchor } from '../components/scrollAnchor.js';
 import { attachColumnResize } from '../components/columnResize.js';
 import { escapeHtml } from '../utils/escape.js';
+import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
 
 const $ = (s) => document.querySelector(s);
 const timelineEl = $('#timeline');
@@ -28,7 +29,8 @@ let members = [];
 let activeRole = 'ALL';
 let keyword = '';
 let zoom = store.get('prm.zoom', 'quarter'); // 與專案總覽共用縮放偏好
-let showProjects = store.get('prm.rsProjects', '1') !== '0'; // 是否顯示專案配置(預設顯示);否則只顯示各時期投入%加總
+// 是否顯示專案配置(預設顯示);不顯示時只顯示各時期投入%加總。可整體切換(右上角 tri-state checkbox),也可雙擊某位成員右邊的空白處單獨切換
+const rowToggle = createRowToggle(store.get('prm.rsProjects', '1') !== '0');
 let projectColors = new Map();
 // 「成員」欄的寬度(使用者拖曳調整後會記住;預設 LABEL_W)
 const LABEL_KEY = 'prm.labelW.resources';
@@ -72,7 +74,7 @@ function render(keepCenter = false, anchor = null) {
     timelineEl.innerHTML = `<div class="state-msg">${members.length ? '沒有符合條件的成員,請調整搜尋或篩選。' : '還沒有成員。請先到 Supabase 的 Table Editor 新增 members 與 allocations。'}</div>`;
     return;
   }
-  timelineEl.innerHTML = renderResourceTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { projectColors, showProjects, labelW });
+  timelineEl.innerHTML = renderResourceTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { projectColors, showProjects: rowToggle.isOn, labelW });
   const tl = timelineEl.querySelector('.tl');
   attachColumnResize(tl, { onChange: (w) => { labelW = w; store.set(LABEL_KEY, String(w)); } }); // 拖曳「成員」欄右緣調整寬度
   if (keep) restoreAnchor(tl, keep);
@@ -98,11 +100,27 @@ async function main() {
   });
   searchEl.addEventListener('input', () => { keyword = searchEl.value.trim(); render(true); });
   const projBox = $('#show-projects');
-  projBox.checked = showProjects;
-  projBox.addEventListener('change', () => {
-    showProjects = projBox.checked;
-    store.set('prm.rsProjects', showProjects ? '1' : '0');
+  const memberIds = () => members.map((m) => m.id);
+  const syncProjBox = () => {
+    const st = rowToggle.state(memberIds());
+    syncTriState(projBox, st);
+    if (st !== 'some') store.set('prm.rsProjects', st === 'all' ? '1' : '0');
+  };
+  syncProjBox();
+  projBox.addEventListener('change', () => { // 全部顯示 / 全部不顯示(清掉個別成員的設定)
+    rowToggle.setAll(projBox.checked);
+    syncProjBox();
     render(true);
+  });
+  timelineEl.addEventListener('dblclick', (e) => { // 雙擊成員右邊的配置區:切換該成員的顯示方式
+    const row = e.target.closest('.tl__track')?.closest('.tl__row');
+    if (!row) return;
+    window.getSelection()?.removeAllRanges();
+    const old = timelineEl.querySelector('.tl');
+    const anchor = old ? captureAnchor(old, { clientX: e.clientX, clientY: e.clientY }) : null; // 保持被雙擊的那一列位置不動
+    rowToggle.toggle(row.dataset.id);
+    syncProjBox();
+    render(true, anchor);
   });
   attachWheelZoom(timelineEl, { // Ctrl + 滑鼠滾輪調整日期尺度
     getKey: () => zoom,
@@ -123,6 +141,7 @@ async function main() {
 
   try {
     members = await getMembers();
+    syncProjBox();
     projectColors = buildProjectColors(members); // 以全部成員計算,篩選時專案顏色不會變
     renderChips();
     render(false);

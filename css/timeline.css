@@ -80,7 +80,7 @@
 .tl__customer { font-weight: 400; color: #3b4753; }
 .tl__modelname { font-weight: 600; }
 
-.tl__track { position: relative; flex: none; }
+.tl__track { position: relative; flex: none; user-select: none; } /* 雙擊會切換該列的配置顯示,避免同時選取文字 */
 .tl__undated {
   position: sticky; left: calc(var(--label-w) + 12px);
   display: inline-block; line-height: var(--row-h);

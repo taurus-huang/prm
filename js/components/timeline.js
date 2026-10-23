@@ -171,11 +171,11 @@ function renderRow(row, ctx) {
       </span>`).join('');
     track = `
       <div class="tl__bar tl__bar--${barStyle}" style="left:${left.toFixed(1)}px;width:${width.toFixed(1)}px"
-        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}"></div>${ctx.showAlloc ? renderAllocs(lanes, x, ppd, ctx.colors, p.id) : ''}${markers}`;
+        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}"></div>${ctx.isShown(p.id) ? renderAllocs(lanes, x, ppd, ctx.colors, p.id) : ''}${markers}`;
   }
 
   return `
-    <div class="tl__row" style="--bar-h:${row.barH}px;--row-h:${row.rowH}px">
+    <div class="tl__row" data-id="${escapeHtml(p.id)}" style="--bar-h:${row.barH}px;--row-h:${row.rowH}px">
       <div class="tl__label">
         <div class="tl__model" title="${escapeHtml(p.customer)} ${escapeHtml(p.model)}"><span class="tl__customer">${escapeHtml(p.customer)}</span> <span class="tl__modelname">${escapeHtml(p.model)}</span></div>
         <div class="tl__sub">
@@ -190,10 +190,10 @@ function renderRow(row, ctx) {
  * @param projects  含 milestones 的專案陣列
  * @param ppd       每天幾個 px(縮放比例)
  * @param unit      刻度單位:'month' | 'quarter' | 'year'(每一格代表多久)
- * @param opts      { showAllocations: 是否在專案長條內顯示人力配置(預設 true), memberColors: 成員顏色表 }
+ * @param opts      { showAllocations: 是否在專案長條內顯示人力配置(true/false,或 (專案id) => boolean 逐專案決定;預設 true), memberColors: 成員顏色表 }
  */
 export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', opts = {}) {
-  const showAlloc = opts.showAllocations !== false;
+  const isShown = typeof opts.showAllocations === 'function' ? opts.showAllocations : () => opts.showAllocations !== false;
   const labelW = opts.labelW ?? LABEL_W; // 左側名稱欄寬度(使用者拖曳調整後由頁面記住並傳入)
   const colors = opts.memberColors ?? buildMemberColors(projects);
   if (!projects.length) return '<div class="state-msg">沒有符合條件的專案。</div>';
@@ -217,7 +217,7 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
   const maxLevel = Math.max(0, ...rows.flatMap((r) => r.ms.map((m) => m.level)));
   const barTop = LV_STEP * (maxLevel + 1) + 6;
   rows.forEach((r) => {
-    const n = showAlloc ? r.lanes.length : 0;
+    const n = isShown(r.p.id) ? r.lanes.length : 0;
     r.barH = Math.max(BAR_H, n ? 8 + n * LANE_H + (n - 1) * LANE_GAP : 0);
     r.rowH = barTop + r.barH + 6 + LV_STEP * (maxLevel + 1) + 4;
   });
@@ -225,7 +225,7 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
   const { ticks, gridlines, band, shade, headH } = buildAxis({ startIdx, end, ppd, unit });
 
   const todayX = x(todayIdx + dayFraction()); // 紅線畫在「今天那一格裡、依現在幾點幾分的比例」的位置
-  const ctx = { startIdx, ppd, totalW, showAlloc, colors };
+  const ctx = { startIdx, ppd, totalW, isShown, colors };
   const rowsHtml = rows.map((r) => renderRow(r, ctx)).join('');
 
   return `
