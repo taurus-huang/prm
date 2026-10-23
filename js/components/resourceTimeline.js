@@ -4,7 +4,7 @@ import { escapeHtml } from '../utils/escape.js';
 import { allocColor, hueForIndex } from '../utils/color.js';
 import { markJoins, joinClass } from '../utils/joins.js';
 import { LOAD_THRESHOLDS, SUM_COLOR_MAX } from '../utils/constants.js';
-import { LABEL_W, ZOOMS, mmdd, textW, computeRange, buildAxis, RESIZE_HANDLE } from './timeAxis.js';
+import { LABEL_W, ZOOMS, mmdd, textW, computeRange, buildAxis, RESIZE_HANDLE, dayFraction } from './timeAxis.js';
 
 // 版面常數(px)
 const LANE_H = 22;     // 每條配置長條高度
@@ -219,7 +219,7 @@ export function renderResourceTimeline(members, ppd = ZOOMS.quarter, unit = 'qua
   const totalW = Math.round((end - startIdx) * ppd);
   const x = (i) => (i - startIdx) * ppd;
   const { ticks, gridlines, band, shade, headH } = buildAxis({ startIdx, end, ppd, unit });
-  const todayX = x(todayIdx);
+  const todayX = x(todayIdx + dayFraction()); // 紅線畫在「今天那一格裡、依現在幾點幾分的比例」的位置
   const ctx = { x, ppd, totalW, colors, showProjects: opts.showProjects !== false, startIdx, endIdx: end - 1 };
 
   return `

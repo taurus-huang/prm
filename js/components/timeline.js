@@ -5,7 +5,7 @@ import { STATUS_LABELS, PENDING_LABEL, TIMELINE_PHASE_ORDER } from '../utils/con
 import { isPending, baseStatus, styleStatus } from '../utils/status.js';
 import { allocColor, hueForIndex } from '../utils/color.js';
 import { markJoins, joinClass } from '../utils/joins.js';
-import { ZOOMS, mmdd, textW, computeRange, buildAxis, RESIZE_HANDLE } from './timeAxis.js';
+import { ZOOMS, mmdd, textW, computeRange, buildAxis, RESIZE_HANDLE, dayFraction } from './timeAxis.js';
 
 // 專案總覽頁從這裡取用縮放設定(實際定義在 timeAxis.js,與人力資源總覽共用)
 export { LABEL_W, ZOOMS, ZOOM_UNITS } from './timeAxis.js';
@@ -224,7 +224,7 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
 
   const { ticks, gridlines, band, shade, headH } = buildAxis({ startIdx, end, ppd, unit });
 
-  const todayX = x(todayIdx);
+  const todayX = x(todayIdx + dayFraction()); // 紅線畫在「今天那一格裡、依現在幾點幾分的比例」的位置
   const ctx = { startIdx, ppd, totalW, showAlloc, colors };
   const rowsHtml = rows.map((r) => renderRow(r, ctx)).join('');
 

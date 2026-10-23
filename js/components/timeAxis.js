@@ -40,6 +40,12 @@ export const UNIT_MONTHS = { month: 1, quarter: 3, year: 12 }; // 以「月」�
 
 export const mmdd = (idx) => ymd(idx).slice(5).replace('-', '/');
 
+// 現在是一天中的哪個位置(0 = 00:00,0.5 = 中午 12:00,接近 1 = 23:59),用本機時間。
+// 「今天」的紅線依此比例畫在今天那一格裡面,而不是畫在今天與昨天的交界(00:00)
+export function dayFraction(d = new Date()) {
+  return (d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000) / 86400;
+}
+
 // 粗估文字寬度(中日韓字寬、英數字窄),用來判斷文字放不放得進長條或會不會重疊
 export function textW(str, fs) {
   let w = 0;

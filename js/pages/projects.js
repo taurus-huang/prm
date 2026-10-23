@@ -2,6 +2,7 @@ import { requireAuth, signOut } from '../auth.js';
 import { getProjects } from '../api/projects.js';
 import { renderTimeline, buildMemberColors, ZOOMS, ZOOM_UNITS, LABEL_W } from '../components/timeline.js';
 import { attachTodayHint } from '../components/todayHint.js';
+import { attachTodayLine } from '../components/todayLine.js';
 import { attachBarLabels } from '../components/barLabels.js';
 import { attachWheelZoom } from '../components/wheelZoom.js';
 import { captureAnchor, restoreAnchor } from '../components/scrollAnchor.js';
@@ -80,6 +81,7 @@ function render(keepCenter = false, anchor = null) {
   if (keep) restoreAnchor(tl, keep);
   else tl.scrollLeft = Number(tl.dataset.todayX) - (tl.clientWidth - getLabelW(tl)) * 0.3; // 首次顯示:今天落在可視區 30% 處
   attachTodayHint(tl); // 今天不在畫面範圍時,日期列顯示紅色箭頭提示方向
+  attachTodayLine(tl); // 紅線依現在的時間定位,並隨時間慢慢移動
   attachBarLabels(tl); // 名稱標在「目前看得到的最左邊那一段」,捲動時即時更新
 }
 
