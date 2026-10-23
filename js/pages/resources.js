@@ -10,6 +10,7 @@ import { captureAnchor, restoreAnchor } from '../components/scrollAnchor.js';
 import { attachColumnResize } from '../components/columnResize.js';
 import { escapeHtml } from '../utils/escape.js';
 import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
+import { openMemberDialog } from '../components/memberDialog.js';
 import { MEMBER_SORTS, DEFAULT_MEMBER_SORT, DEFAULT_MEMBER_DIR } from '../utils/memberSort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -31,6 +32,7 @@ let activeRole = 'ALL';
 let keyword = '';
 // 排序只有管理員能用;非管理員永遠是預設順序(依職務、姓名)。選擇會記住
 let canSort = false;
+let canEdit = false; // 只有管理員能新增 / 編輯 / 刪除成員;其他帳號為唯讀
 let sortKey = store.get('prm.rsSort', DEFAULT_MEMBER_SORT);
 if (!(sortKey in MEMBER_SORTS)) sortKey = DEFAULT_MEMBER_SORT;
 let sortDir = store.get('prm.rsSortDir', DEFAULT_MEMBER_DIR);
@@ -80,10 +82,10 @@ function render(keepCenter = false, anchor = null) {
   const keep = anchor ?? (old && keepCenter ? captureAnchor(old, { vertical: false }) : null);
 
   if (!rows.length) {
-    timelineEl.innerHTML = `<div class="state-msg">${members.length ? '沒有符合條件的成員,請調整搜尋或篩選。' : '還沒有成員。請先到 Supabase 的 Table Editor 新增 members 與 allocations。'}</div>`;
+    timelineEl.innerHTML = `<div class="state-msg">${members.length ? '沒有符合條件的成員,請調整搜尋或篩選。' : '還沒有成員。' + (canEdit ? '請按右上角的「＋ 新增成員」建立第一位成員。' : '請洽管理員新增成員。') + ''}</div>`;
     return;
   }
-  timelineEl.innerHTML = renderResourceTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { projectColors, showProjects: rowToggle.isOn, labelW });
+  timelineEl.innerHTML = renderResourceTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { projectColors, showProjects: rowToggle.isOn, labelW, canEdit });
   const tl = timelineEl.querySelector('.tl');
   attachColumnResize(tl, { onChange: (w) => { labelW = w; store.set(LABEL_KEY, String(w)); } }); // 拖曳「成員」欄右緣調整寬度
   if (keep) restoreAnchor(tl, keep);
@@ -100,7 +102,9 @@ async function main() {
   $('#user-email').textContent = `${session.user.email} (${getRole(session)})`; // 帳號 email 旁顯示身份(admin / viewer …)
   $('#logout-btn').addEventListener('click', signOut);
 
-  canSort = isAdmin(session); // 排序功能僅限管理員
+  canEdit = isAdmin(session); // 新增 / 編輯 / 刪除成員、排序功能僅限管理員
+  $('#add-member').hidden = !canEdit;
+  canSort = canEdit;
   $('#sort-box').hidden = !canSort;
   if (canSort) {
     const sortEl = $('#sort');
@@ -120,6 +124,31 @@ async function main() {
     });
   }
 
+  // 新增 / 編輯 / 刪除成員:完成後重新載入資料並重畫(保持目前的水平位置)
+  const reload = async (savedRole) => {
+    if (savedRole && activeRole !== 'ALL' && activeRole !== savedRole) activeRole = 'ALL'; // 剛存的成員若被職務篩選擋掉,改回「全部」免得看不到
+    try {
+      members = await getMembers();
+      projectColors = buildProjectColors(members);
+      renderChips();
+      syncProjBox();
+      render(true);
+    } catch (err) {
+      alert(`重新載入失敗:${err.message}`);
+    }
+  };
+  const knownRoles = () => [...new Set(members.map((m) => String(m.role ?? '').trim()).filter(Boolean))].sort();
+  $('#add-member').addEventListener('click', () => { if (canEdit) openMemberDialog({ roles: knownRoles(), onDone: reload }); });
+  const editMember = (id) => { if (!canEdit) return; const member = members.find((m) => m.id === id); if (member) openMemberDialog({ member, roles: knownRoles(), onDone: reload }); };
+  timelineEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-edit]');
+    if (btn) editMember(btn.dataset.edit);
+  });
+  timelineEl.addEventListener('dblclick', (e) => { // 雙擊成員名稱欄也能編輯
+    if (!canEdit || e.target.closest('.tl__edit') || e.target.closest('.tl__resize')) return;
+    const row = e.target.closest('.tl__label')?.closest('.tl__row');
+    if (row) { window.getSelection()?.removeAllRanges(); editMember(row.dataset.id); }
+  });
   chipsEl.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-role]');
     if (!btn) return;

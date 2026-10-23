@@ -17,6 +17,7 @@
 .dlg__f > span { font-weight: 500; }
 .dlg__f b { color: var(--danger); }
 .dlg__f--empty { visibility: hidden; }
+.dlg__f--wide { grid-column: 1 / -1; }
 .dlg input, .dlg select, .dlg textarea {
   font: inherit; font-size: 14px; width: 100%; padding: 7px 10px;
   border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);

@@ -1,19 +1,25 @@
--- 角色權限:只有管理員(admin)能新增 / 修改 / 刪除專案與里程碑;其他登入帳號(viewer 等)只能讀取。
+-- 角色權限:只有管理員(admin)能新增 / 修改 / 刪除專案、里程碑與成員;其他登入帳號(viewer 等)只能讀取。
 -- 在 Supabase SQL Editor 執行一次。前端只是隱藏按鈕,真正擋住寫入的是這裡的 RLS。
 
 -- 1. 把舊的「所有登入者可讀寫」policy 拿掉(名稱依 prm.sql)
 drop policy if exists "Allow authenticated users access projects" on projects;
 drop policy if exists "Allow authenticated users access milestones" on milestones;
+drop policy if exists "Allow authenticated users access members" on members;
 
 -- 2. 所有登入者都能讀取
 create policy "Authenticated read projects" on projects for select to authenticated using (true);
 create policy "Authenticated read milestones" on milestones for select to authenticated using (true);
+create policy "Authenticated read members" on members for select to authenticated using (true);
 
 -- 3. 只有 app_metadata.role = 'admin' 的帳號能寫入
 create policy "Admin write projects" on projects for all to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 create policy "Admin write milestones" on milestones for all to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "Admin write members" on members for all to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
