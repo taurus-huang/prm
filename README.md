@@ -39,6 +39,14 @@
 `projects.status` 是唯一的狀態欄位,值為 BD、NPI、MP、Pending(暫緩)。請參考 `js/utils/constants.js` 的 `STATUS_ORDER` 。
 專案總覽的篩選為 checkbox,顯示「狀態 : 數量」(各狀態的專案數,加起來等於專案總數),勾選哪一種就顯示哪一種;勾選變動時下方結果立刻更新。預設勾選的項目在 `js/utils/constants.js` 的 `DEFAULT_FILTERS`(預設 BD、NPI、MP)。Pending 的長條為灰色虛線,EOL 為深紅色外框。
 
+## 專案排序
+搜尋列的「排序」下拉選單(會記住上次的選擇,預設開始日期),旁邊的下拉選單可選「遞增 / 遞減」(預設遞增;遞減時所有排序鍵一起反向),日期空白的專案不論遞增遞減都排最後:
+- 客戶機種:customer → model
+- 專案狀態:status(依 BD、NPI、MP、EOL、Pending 的順序,即 `STATUS_ORDER`)→ 客戶機種
+- 開始日期:start_date → end_date → 客戶機種
+- 結束日期:end_date → start_date → 客戶機種
+邏輯在 `js/utils/sort.js`。
+
 ## 日期尺度(日 / 週 / 旬 / 月 / 季 / 年)
 專案總覽與人力資源總覽的時間軸共用同一套日期尺度,由細到粗:
 - **日**:每格 1 天;**週**:每格 1 週(週一到週日);**旬**:每格 1 旬(上旬 1~10 日、中旬 11~20 日、下旬 21 日~月底);**月**、**季**(1~3、4~6、7~9、10~12 月)、**年**。

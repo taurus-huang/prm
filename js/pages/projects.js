@@ -12,6 +12,7 @@ import { escapeHtml } from '../utils/escape.js';
 import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
 import { STATUS_ORDER, DEFAULT_FILTERS } from '../utils/constants.js';
 import { baseStatus, matchesFilter } from '../utils/status.js';
+import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
 
 const $ = (s) => document.querySelector(s);
 const timelineEl = $('#timeline');
@@ -27,6 +28,10 @@ const store = {
 let projects = [];
 const selected = new Set(DEFAULT_FILTERS); // 被勾選的篩選項目(預設值在 constants.js 的 DEFAULT_FILTERS)
 let keyword = '';
+let sortKey = store.get('prm.sort', DEFAULT_SORT); // 排序方式(會記住上次的選擇)
+if (!(sortKey in SORTS)) sortKey = DEFAULT_SORT;
+let sortDir = store.get('prm.sortDir', DEFAULT_DIR); // 'asc' 遞增 / 'desc' 遞減(會記住)
+if (sortDir !== 'asc' && sortDir !== 'desc') sortDir = DEFAULT_DIR;
 let zoom = store.get('prm.zoom', 'quarter');
 // 是否在專案長條內顯示人力配置(預設顯示)。可整體切換(右上角 tri-state checkbox),也可雙擊某個專案右邊的空白處單獨切換
 const rowToggle = createRowToggle(store.get('prm.alloc', '1') !== '0');
@@ -56,7 +61,7 @@ function filteredProjects() {
   return projects.filter((p) =>
     matchesFilter(p, selected) &&
     (!kw || `${p.customer} ${p.model}`.toLowerCase().includes(kw))
-  );
+  ).sort((a, b) => SORTS[sortKey].compare(a, b, sortDir === 'desc' ? -1 : 1));
 }
 
 // anchor:縮放時(按鈕或 Ctrl + 滾輪)由呼叫端傳入的錨點 —— 水平保持日期、垂直保持所在的資料列。
@@ -98,6 +103,21 @@ async function main() {
     if (box.checked) selected.add(box.dataset.status);
     else selected.delete(box.dataset.status);
     render(true); // 勾選一變動,下方結果立刻更新
+  });
+  const sortEl = $('#sort');
+  sortEl.innerHTML = Object.entries(SORTS).map(([k, s]) => `<option value="${k}">${escapeHtml(s.label)}</option>`).join('');
+  sortEl.value = sortKey;
+  sortEl.addEventListener('change', () => { // 排序改變 → 下方結果立刻更新
+    sortKey = sortEl.value;
+    store.set('prm.sort', sortKey);
+    render(true);
+  });
+  const dirEl = $('#sort-dir');
+  dirEl.value = sortDir;
+  dirEl.addEventListener('change', () => {
+    sortDir = dirEl.value;
+    store.set('prm.sortDir', sortDir);
+    render(true);
   });
   searchEl.addEventListener('input', () => { keyword = searchEl.value.trim(); render(true); });
   const allocBox = $('#show-alloc');

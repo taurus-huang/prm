@@ -4,6 +4,11 @@
 .page-head .count { color: var(--muted); }
 
 .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.toolbar .sort { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
+.toolbar .sort select {
+  font: inherit; font-size: 14px; padding: 6px 8px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); cursor: pointer;
+}
 .toolbar input[type="search"] {
   font: inherit;
   padding: 7px 12px;

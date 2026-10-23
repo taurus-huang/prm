@@ -204,8 +204,7 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
   const x = (i) => (i - startIdx) * ppd;
 
   // 整理每個專案的里程碑、人員配置、長條範圍與標籤層級
-  const rows = [...projects]
-    .sort((a, b) => (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999'))
+  const rows = projects // 專案的排列順序由呼叫端(專案總覽的排序選單)決定
     .map((p) => {
       const ms = getMilestones(p);
       assignLevels(ms, x);
