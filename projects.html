@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/phase-bar.css">
   <link rel="stylesheet" href="css/timeline.css">
+  <link rel="stylesheet" href="css/dialog.css">
 </head>
 <body>
   <header class="topbar">
@@ -27,6 +28,7 @@
       <h1>專案總覽</h1>
       <div class="head-tools">
         <span class="count" id="count"></span>
+        <button type="button" class="btn" id="add-project" hidden>＋ 新增專案</button>
         <label class="toggle" id="alloc-toggle"><input type="checkbox" id="show-alloc" checked> 顯示人力配置</label>
         <div class="seg" id="zoom" role="group" aria-label="時間軸縮放" title="日期尺度(也可以在時間軸上按住 Ctrl 再滾動滑鼠滾輪)">
           <button type="button" data-zoom="day" aria-pressed="false">日</button>

@@ -39,6 +39,14 @@
 `projects.status` 是唯一的狀態欄位,值為 BD、NPI、MP、Pending(暫緩)。請參考 `js/utils/constants.js` 的 `STATUS_ORDER` 。
 專案總覽的篩選為 checkbox,顯示「狀態 : 數量」(各狀態的專案數,加起來等於專案總數),勾選哪一種就顯示哪一種;勾選變動時下方結果立刻更新。預設勾選的項目在 `js/utils/constants.js` 的 `DEFAULT_FILTERS`(預設 BD、NPI、MP)。Pending 的長條為灰色虛線,EOL 為深紅色外框。
 
+## 新增 / 編輯 / 刪除專案
+- 右上角「＋ 新增專案」開啟對話框:客戶、機種(必填)、專案狀態、開始 / 結束日期、備註,以及可增減的里程碑清單(階段、目標日期、備註)。
+- 編輯:滑鼠移到專案名稱欄會出現「✎ 編輯」按鈕(觸控裝置一律顯示),或在專案名稱欄雙擊。
+- 刪除:在編輯對話框左下角按「刪除專案」,再於確認畫面按「確認刪除」。會一併刪除該專案的里程碑與人力配置,無法復原。
+- 人力配置(allocations)不在這個對話框內維護。儲存後會重新載入並保持目前的水平位置;剛儲存的專案若其狀態沒被勾選,會自動勾上。
+- **權限**:只有管理員能用以上功能。身份讀自登入帳號的 `app_metadata.role`(raw_app_meta_data),沒有才讀 `user_metadata.role`(raw_user_meta_data),都沒有就是 viewer(`js/auth.js` 的 `getRole` / `isAdmin`);兩個頁面右上角的 email 旁會顯示身份,例如 `name@example.com (admin)`。viewer 看不到「新增專案」與「編輯」按鈕,雙擊專案名稱也不會開啟。資料庫端的寫入限制(RLS)與設定方式請看 `roles.sql`(RLS 只認 app_metadata,原因寫在檔案裡);改完角色後該帳號要重新登入。
+- 程式:`js/components/projectDialog.js`、`js/api/projects.js`(createProject / updateProject / deleteProject)、`css/dialog.css`。
+
 ## 專案排序
 搜尋列的「排序」下拉選單(會記住上次的選擇,預設開始日期),旁邊的下拉選單可選「遞增 / 遞減」(預設遞增;遞減時所有排序鍵一起反向),日期空白的專案不論遞增遞減都排最後:
 - 客戶機種:customer → model

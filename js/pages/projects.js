@@ -1,4 +1,4 @@
-import { requireAuth, signOut } from '../auth.js';
+import { requireAuth, signOut, isAdmin, getRole } from '../auth.js';
 import { getProjects } from '../api/projects.js';
 import { renderTimeline, buildMemberColors, ZOOMS, ZOOM_UNITS, LABEL_W } from '../components/timeline.js';
 import { attachTodayHint } from '../components/todayHint.js';
@@ -12,6 +12,7 @@ import { escapeHtml } from '../utils/escape.js';
 import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
 import { STATUS_ORDER, DEFAULT_FILTERS } from '../utils/constants.js';
 import { baseStatus, matchesFilter } from '../utils/status.js';
+import { openProjectDialog } from '../components/projectDialog.js';
 import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -36,6 +37,7 @@ let zoom = store.get('prm.zoom', 'quarter');
 // 是否在專案長條內顯示人力配置(預設顯示)。可整體切換(右上角 tri-state checkbox),也可雙擊某個專案右邊的空白處單獨切換
 const rowToggle = createRowToggle(store.get('prm.alloc', '1') !== '0');
 let memberColors = new Map();
+let canEdit = false; // 只有管理員(app_metadata.role = 'admin')能新增 / 編輯 / 刪除專案;其他帳號為唯讀
 // 「專案」欄的寬度(使用者拖曳調整後會記住;預設 LABEL_W)
 const LABEL_KEY = 'prm.labelW.projects';
 let labelW = Math.min(600, Math.max(MIN_LABEL_W, Number(store.get(LABEL_KEY, '0')) || LABEL_W));
@@ -51,7 +53,7 @@ function renderChips() {
 }
 
 function emptyMessage() {
-  if (!projects.length) return '還沒有專案。請先到 Supabase 的 Table Editor 新增一筆 projects 與 milestones。';
+  if (!projects.length) return '還沒有專案。' + (canEdit ? '請按右上角的「＋ 新增專案」建立第一個專案。' : '請洽管理員新增專案。');
   if (!selected.size) return '尚未勾選任何階段,請至少勾選一項。';
   return '沒有符合條件的專案,請調整搜尋或篩選。';
 }
@@ -78,7 +80,7 @@ function render(keepCenter = false, anchor = null) {
     timelineEl.innerHTML = `<div class="state-msg">${emptyMessage()}</div>`;
     return;
   }
-  timelineEl.innerHTML = renderTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { showAllocations: rowToggle.isOn, memberColors, labelW });
+  timelineEl.innerHTML = renderTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { showAllocations: rowToggle.isOn, canEdit, memberColors, labelW });
   const tl = timelineEl.querySelector('.tl');
   if (!tl) return;
 
@@ -94,7 +96,9 @@ async function main() {
   const session = await requireAuth();
   if (!session) return;
 
-  $('#user-email').textContent = session.user.email;
+  canEdit = isAdmin(session);
+  $('#add-project').hidden = !canEdit;
+  $('#user-email').textContent = `${session.user.email} (${getRole(session)})`; // 帳號 email 旁顯示身份(admin / viewer …)
   $('#logout-btn').addEventListener('click', signOut);
 
   chipsEl.addEventListener('change', (e) => {
@@ -111,6 +115,30 @@ async function main() {
     sortKey = sortEl.value;
     store.set('prm.sort', sortKey);
     render(true);
+  });
+  // 新增 / 編輯 / 刪除專案:完成後重新載入資料並重畫(保持目前的水平位置)
+  const reload = async (savedStatus) => {
+    if (savedStatus) selected.add(savedStatus); // 剛新增 / 修改的專案,其狀態若沒被勾選就自動勾上,免得存完看不到
+    try {
+      projects = await getProjects();
+      memberColors = buildMemberColors(projects);
+      renderChips();
+      syncAllocBox();
+      render(true);
+    } catch (err) {
+      alert(`重新載入失敗:${err.message}`);
+    }
+  };
+  $('#add-project').addEventListener('click', () => { if (canEdit) openProjectDialog({ onDone: reload }); });
+  const editProject = (id) => { if (!canEdit) return; const project = projects.find((p) => p.id === id); if (project) openProjectDialog({ project, onDone: reload }); };
+  timelineEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-edit]');
+    if (btn) editProject(btn.dataset.edit);
+  });
+  timelineEl.addEventListener('dblclick', (e) => { // 雙擊專案名稱欄也能編輯
+    if (!canEdit || e.target.closest('.tl__edit') || e.target.closest('.tl__resize')) return;
+    const row = e.target.closest('.tl__label')?.closest('.tl__row');
+    if (row) { window.getSelection()?.removeAllRanges(); editProject(row.dataset.id); }
   });
   const dirEl = $('#sort-dir');
   dirEl.value = sortDir;

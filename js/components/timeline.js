@@ -178,6 +178,7 @@ function renderRow(row, ctx) {
     <div class="tl__row" data-id="${escapeHtml(p.id)}" style="--bar-h:${row.barH}px;--row-h:${row.rowH}px">
       <div class="tl__label">
         <div class="tl__model" title="${escapeHtml(p.customer)} ${escapeHtml(p.model)}"><span class="tl__customer">${escapeHtml(p.customer)}</span> <span class="tl__modelname">${escapeHtml(p.model)}</span></div>
+        ${ctx.canEdit ? `<button type="button" class="tl__edit" data-edit="${escapeHtml(p.id)}" title="編輯 / 刪除這個專案(也可以在專案名稱上雙擊)">✎ 編輯</button>` : ''}
         <div class="tl__sub">
           <span class="badge badge--${status}">${escapeHtml(STATUS_LABELS[status].split(' ')[0])}</span>
         </div>
@@ -190,7 +191,7 @@ function renderRow(row, ctx) {
  * @param projects  含 milestones 的專案陣列
  * @param ppd       每天幾個 px(縮放比例)
  * @param unit      刻度單位:'month' | 'quarter' | 'year'(每一格代表多久)
- * @param opts      { showAllocations: 是否在專案長條內顯示人力配置(true/false,或 (專案id) => boolean 逐專案決定;預設 true), memberColors: 成員顏色表 }
+ * @param opts      { showAllocations: 是否在專案長條內顯示人力配置(true/false,或 (專案id) => boolean 逐專案決定;預設 true), memberColors: 成員顏色表, canEdit: 是否顯示專案名稱欄的「編輯」按鈕(僅管理員) }
  */
 export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', opts = {}) {
   const isShown = typeof opts.showAllocations === 'function' ? opts.showAllocations : () => opts.showAllocations !== false;
@@ -224,7 +225,7 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
   const { ticks, gridlines, band, shade, headH } = buildAxis({ startIdx, end, ppd, unit });
 
   const todayX = x(todayIdx + dayFraction()); // 紅線畫在「今天那一格裡、依現在幾點幾分的比例」的位置
-  const ctx = { startIdx, ppd, totalW, isShown, colors };
+  const ctx = { startIdx, ppd, totalW, isShown, colors, canEdit: opts.canEdit === true };
   const rowsHtml = rows.map((r) => renderRow(r, ctx)).join('');
 
   return `

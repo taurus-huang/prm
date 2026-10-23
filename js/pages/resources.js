@@ -1,4 +1,4 @@
-import { requireAuth, signOut } from '../auth.js';
+import { requireAuth, signOut, getRole } from '../auth.js';
 import { getMembers } from '../api/members.js';
 import { renderResourceTimeline, buildProjectColors } from '../components/resourceTimeline.js';
 import { ZOOMS, ZOOM_UNITS, LABEL_W, MIN_LABEL_W, getLabelW } from '../components/timeAxis.js';
@@ -88,7 +88,7 @@ async function main() {
   const session = await requireAuth();
   if (!session) return;
 
-  $('#user-email').textContent = session.user.email;
+  $('#user-email').textContent = `${session.user.email} (${getRole(session)})`; // 帳號 email 旁顯示身份(admin / viewer …)
   $('#logout-btn').addEventListener('click', signOut);
 
   chipsEl.addEventListener('click', (e) => {
