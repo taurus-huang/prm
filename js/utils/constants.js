@@ -1,21 +1,22 @@
 // 量產前階段順序(對應 milestones.phase)
 export const PHASES = ['EVT', 'DVT', 'PVT', 'MP'];
 
-// 專案狀態(對應 projects.status):BD、NPI、MP。
-// 「暫緩」已獨立成 projects.pending(boolean)欄位,專案可以同時是 NPI 又暫緩。
-export const STATUS_ORDER = ['BD', 'NPI', 'MP'];
+// 專案狀態(對應 projects.status,只有這一個欄位):BD、NPI、MP、EOL、Pending(暫緩)。
+// 每個專案只會是其中一種;陣列順序就是篩選 checkbox 的顯示順序。
+// export const STATUS_ORDER = ['BD', 'NPI', 'MP', 'EOL', 'Pending'];
+export const STATUS_ORDER = ['BD', 'NPI', 'MP', 'Pending'];
 export const STATUS_LABELS = {
   BD: 'BD 商機',
   NPI: 'NPI 新品導入',
   MP: 'MP 量產',
+  // EOL: 'EOL 停產',
+  Pending: 'Pending 暫緩',
 };
-export const PENDING_LABEL = 'Pending 暫緩';
 
 // ============================================================
 // 專案總覽的篩選 checkbox
-// 每個專案只屬於一類:暫緩中(pending)的歸在 Pending,其餘依狀態歸在 BD / NPI / MP。
-// 勾選哪一類就顯示哪一類(所以不勾 Pending 時,暫緩中的專案不會出現)。
-// DEFAULT_FILTERS:頁面一開啟時預設勾選的項目,想改預設值就改這裡(可用:'BD'、'NPI'、'MP'、'PENDING')。
+// 每個 checkbox 對應一種 status,勾選哪一種就顯示哪一種。
+// DEFAULT_FILTERS:頁面一開啟時預設勾選的項目,想改預設值就改這裡(可用:'BD'、'NPI'、'MP'、'EOL'、'Pending')。
 // ============================================================
 export const DEFAULT_FILTERS = ['BD', 'NPI', 'MP'];
 

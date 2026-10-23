@@ -10,8 +10,8 @@ import { attachColumnResize } from '../components/columnResize.js';
 import { getLabelW, MIN_LABEL_W } from '../components/timeAxis.js';
 import { escapeHtml } from '../utils/escape.js';
 import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
-import { STATUS_ORDER, PENDING_LABEL, DEFAULT_FILTERS } from '../utils/constants.js';
-import { PENDING_KEY, categoryOf, matchesFilter } from '../utils/status.js';
+import { STATUS_ORDER, DEFAULT_FILTERS } from '../utils/constants.js';
+import { baseStatus, matchesFilter } from '../utils/status.js';
 
 const $ = (s) => document.querySelector(s);
 const timelineEl = $('#timeline');
@@ -36,14 +36,12 @@ const LABEL_KEY = 'prm.labelW.projects';
 let labelW = Math.min(600, Math.max(MIN_LABEL_W, Number(store.get(LABEL_KEY, '0')) || LABEL_W));
 if (!(zoom in ZOOMS)) zoom = 'quarter';
 
-// 篩選 checkbox:顯示「階段 : 數量」(數量 = 該分類的專案數,四類加起來等於專案總數)。
+// 篩選 checkbox:顯示「階段 : 數量」(數量 = 該狀態的專案數,各狀態加起來等於專案總數)。
 // 只在資料載入後建立一次;勾選變動時不重建,鍵盤操作時焦點才不會跑掉
 function renderChips() {
-  const keys = [...STATUS_ORDER, PENDING_KEY];
-  chipsEl.innerHTML = keys.map((key) => {
-    const n = projects.filter((p) => categoryOf(p) === key).length;
-    const name = key === PENDING_KEY ? PENDING_LABEL.split(' ')[0] : key;
-    return `<label class="toggle"><input type="checkbox" data-status="${key}"${selected.has(key) ? ' checked' : ''}> ${escapeHtml(name)} : ${n}</label>`;
+  chipsEl.innerHTML = STATUS_ORDER.map((key) => {
+    const n = projects.filter((p) => baseStatus(p) === key).length;
+    return `<label class="toggle"><input type="checkbox" data-status="${key}"${selected.has(key) ? ' checked' : ''}> ${escapeHtml(key)} : ${n}</label>`;
   }).join('');
 }
 

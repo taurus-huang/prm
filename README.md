@@ -35,8 +35,9 @@
 ## 配置長條的名稱標示
 同一組(人力資源總覽:同一成員的同一專案;專案總覽:同一成員)的多段配置長條,只在「目前看得到的最左邊、且放得下名稱的那一段」標示名稱。橫向捲動、縮放時會即時重新決定,所以最左邊那段被捲出畫面後,名稱會改標在右邊的下一段。邏輯在 `js/components/barLabels.js`,兩個頁面共用。
 
-## 專案狀態與 Pending 篩選
-專案總覽的篩選為 checkbox,顯示「階段 : 數量」(BD / NPI / MP / Pending,四類各自的專案數,加起來等於專案總數)。每個專案只屬於一類(暫緩中的歸 Pending,其餘依狀態),勾選哪一類就顯示哪一類;勾選變動時下方結果立刻更新。預設勾選的項目在 `js/utils/constants.js` 的 `DEFAULT_FILTERS`(預設 BD、NPI、MP)。舊資料若 `status` 仍是 `'Pending'` 也會被視為暫緩。
+## 專案狀態與篩選
+`projects.status` 是唯一的狀態欄位,值為 BD、NPI、MP、Pending(暫緩)。請參考 `js/utils/constants.js` 的 `STATUS_ORDER` 。
+專案總覽的篩選為 checkbox,顯示「狀態 : 數量」(各狀態的專案數,加起來等於專案總數),勾選哪一種就顯示哪一種;勾選變動時下方結果立刻更新。預設勾選的項目在 `js/utils/constants.js` 的 `DEFAULT_FILTERS`(預設 BD、NPI、MP)。Pending 的長條為灰色虛線,EOL 為深紅色外框。
 
 ## 日期尺度(日 / 週 / 旬 / 月 / 季 / 年)
 專案總覽與人力資源總覽的時間軸共用同一套日期尺度,由細到粗:

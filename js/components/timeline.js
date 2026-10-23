@@ -1,8 +1,8 @@
 import { todayStr } from '../utils/phase.js';
 import { dayIndex, ymd } from '../utils/date.js';
 import { escapeHtml } from '../utils/escape.js';
-import { STATUS_LABELS, PENDING_LABEL, TIMELINE_PHASE_ORDER } from '../utils/constants.js';
-import { isPending, baseStatus, styleStatus } from '../utils/status.js';
+import { STATUS_LABELS, TIMELINE_PHASE_ORDER } from '../utils/constants.js';
+import { baseStatus, styleStatus } from '../utils/status.js';
 import { allocColor, hueForIndex } from '../utils/color.js';
 import { markJoins, joinClass } from '../utils/joins.js';
 import { ZOOMS, mmdd, textW, computeRange, buildAxis, RESIZE_HANDLE, dayFraction } from './timeAxis.js';
@@ -179,7 +179,7 @@ function renderRow(row, ctx) {
       <div class="tl__label">
         <div class="tl__model" title="${escapeHtml(p.customer)} ${escapeHtml(p.model)}"><span class="tl__customer">${escapeHtml(p.customer)}</span> <span class="tl__modelname">${escapeHtml(p.model)}</span></div>
         <div class="tl__sub">
-          <span class="badge badge--${status}">${escapeHtml(STATUS_LABELS[status].split(' ')[0])}</span>${isPending(p) ? `<span class="badge badge--Pending">${escapeHtml(PENDING_LABEL.split(' ')[0])}</span>` : ''}
+          <span class="badge badge--${status}">${escapeHtml(STATUS_LABELS[status].split(' ')[0])}</span>
         </div>
       </div>
       <div class="tl__track" style="width:${totalW}px">${track}</div>

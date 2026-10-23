@@ -36,6 +36,7 @@
 }
 .badge--BD { background: #e6e9f3; color: #3a4a8a; }
 .badge--MP { background: #dff1e6; color: #1f6a3f; }
+.badge--EOL { background: #f3e3e1; color: #8a3a32; }
 .badge--Pending { background: #e8ebee; color: #56626d; }
 
 .state-msg { padding: 32px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }

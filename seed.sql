@@ -1,11 +1,11 @@
 -- 測試資料(可選):貼到 Supabase SQL Editor 執行
 with p as (
-  insert into projects (customer, model, status, pending, start_date, end_date, note) values
-    ('Acme',   'AX-100', 'NPI', false, '2026-01-05', '2027-03-31', 'DVT 進行中'),
-    ('Globex', 'GX-20',  'MP',  false, '2025-02-01', '2027-12-31', '已量產'),
-    ('Initech','IN-7',   'BD',  false, null,         null,         '報價中'),
-    ('Umbrella','UM-3',  'NPI', true,  '2026-03-01', null,         '客戶暫停'),
-    ('Hooli',  'HL-9',   'NPI', false, '2026-06-01', '2027-09-30', 'EVT 準備中')
+  insert into projects (customer, model, status, start_date, end_date, note) values
+    ('Acme',   'AX-100', 'NPI', '2026-01-05', '2027-03-31', 'DVT 進行中'),
+    ('Globex', 'GX-20',  'MP',  '2025-02-01', '2027-12-31', '已量產'),
+    ('Initech','IN-7',   'BD',  null,         null,         '報價中'),
+    ('Umbrella','UM-3',  'Pending', '2026-03-01', null,         '客戶暫停'),
+    ('Hooli',  'HL-9',   'NPI', '2026-06-01', '2027-09-30', 'EVT 準備中')
   returning id, model
 )
 insert into milestones (project_id, phase, target_date)
