@@ -139,16 +139,15 @@ function renderSumBars(segs, x, ppd) {
   markJoins(items); // 時間相連的段落,銜接處不要圓角
   return segs.map((sg, i) => {
     const width = Math.max(4, (sg.to - sg.from + 1) * ppd);
-    const label = `${sg.sum}%`;
-    const text = width >= textW(label, 12) + 10 ? label : '';
     // allocColor 的深淺是以 0~100 計算,所以把 0~SUM_COLOR_MAX% 的加總換算成 0~100 的比例
     const { bg, fg } = allocColor(Math.min(100, (sg.sum / SUM_COLOR_MAX) * 100), SUM_HUE);
     // const level = levelOf(sg.sum);
 	const level = '';
     const note = level === 'high' ? `(超過 ${LOAD_THRESHOLDS.high}%)` : level === 'low' ? `(低於 ${LOAD_THRESHOLDS.low}%)` : '';
-    const detail = sg.parts.length ? sg.parts.join('、') : '無配置(有空)';
+    // 滑鼠提示分多行(&#10; 為換行):第一行「合計 % : 期間」,之後每個專案一行
+    const tip = [`合計 ${sg.sum}%${note} : ${ymd(sg.from)} ~ ${ymd(sg.to)}`, ...sg.parts].map(escapeHtml).join('&#10;');
     return `<div class="rs__bar${joinClass(items[i])}${level ? ` rs__bar--${level}` : ''}" style="left:${x(sg.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:${PAD}px;background:${bg};color:${fg}"
-      title="合計 ${sg.sum}%${note} · ${escapeHtml(ymd(sg.from))} ~ ${escapeHtml(ymd(sg.to))} · ${escapeHtml(detail)}">${text ? `<span class="rs__text">${label}</span>` : ''}</div>`;
+      title="${tip}"></div>`;
   }).join('');
 }
 
@@ -186,8 +185,8 @@ function renderRow(m, ctx) {
     // track = bars + renderFrames(sumSegments(items, range), n, ctx.x, ctx.ppd);
 	track = bars;
   } else {
-    // 空檔(加總 0%)只有在會被視為「偏低」時才畫出來(low > 0);否則維持不畫
-    const segs = sumSegments(items, levelOf(0) === 'low' ? range : null);
+    // 0% 的時段(沒有配置的空檔、或配置百分比為 0)不畫長條也不顯示 0%,維持空白底
+    const segs = sumSegments(items).filter((sg) => sg.sum > 0);
     track = segs.length ? renderSumBars(segs, ctx.x, ctx.ppd) : none;
   }
   const role = String(m.role ?? '').trim();
