@@ -8,7 +8,7 @@ import { TIMELINE_PHASE_ORDER } from '../utils/constants.js';
 // 專案總覽時間軸上的里程碑編輯(僅管理員):
 //  1. 雙擊里程碑名稱 → 就地修改名稱
 //  2. 雙擊里程碑日期 → 就地修改日期
-//  3. 點一下菱形 → 變色(琥珀色)= 選取,可以左右拖曳改日期(以天為單位);點其他地方 → 取消選取
+//  3. 雙擊菱形 → 變色(琥珀色)= 進入編輯模式,可以左右拖曳改日期(以天為單位);點其他地方 → 取消選取
 //  4. 專案長條內沒有顯示人力配置時,雙擊長條內的空白處 → 在該日期新增里程碑
 // 資料直接改在頁面的 projects 陣列上,再請頁面重畫(refresh),並保持畫面位置。
 //
@@ -56,7 +56,7 @@ export function attachMilestoneEditor(host, opts) {
     const ms = dia?.closest('.tl__ms');
     if (!ms) return;
     const id = ms.dataset.msId;
-    if (id !== selectedId) { select(id); return; } // 第一下只是選取
+    if (id !== selectedId) return; // 還沒進入編輯模式(要先雙擊菱形)→ 不能拖
 
     const found = find(id);
     const tl = host.querySelector('.tl');
@@ -108,6 +108,7 @@ export function attachMilestoneEditor(host, opts) {
           onCommit: (v) => save(() => { m.target_date = v; }, () => updateMilestone(m.id, { target_date: v }), e),
         });
       }
+      else if (e.target.closest('i')) select(ms.dataset.msId); // 雙擊菱形 → 進入編輯模式(變色,可左右拖曳)
       return true; // 在里程碑上雙擊,一律不切換人力配置顯示
     }
     const bar = e.target.closest('.tl__bar');

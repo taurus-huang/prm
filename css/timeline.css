@@ -211,3 +211,6 @@
    列與列之間 1px 的分隔線沒被它蓋住,捲到欄位底下的「今天」紅線就會從那條縫露出來 */
 .tl__label { box-shadow: 0 1px 0 #e6eaee; }
 .tl__row:last-of-type .tl__label { box-shadow: none; }
+
+/* 滑鼠所在的那一列:整列(名稱欄加右邊軌道)的白底改成淡淡的底色。名稱欄是不透明的,要自己也換一份 */
+.tl__row:hover, .tl__row:hover .tl__label { background: #eef5f8; }
