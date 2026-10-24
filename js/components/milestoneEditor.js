@@ -8,7 +8,8 @@ import { TIMELINE_PHASE_ORDER } from '../utils/constants.js';
 // 專案總覽時間軸上的里程碑編輯(僅管理員):
 //  1. 雙擊里程碑名稱 → 就地修改名稱
 //  2. 雙擊里程碑日期 → 就地修改日期
-//  3. 雙擊菱形 → 變色(琥珀色)= 進入編輯模式,可以左右拖曳改日期(以天為單位);點其他地方 → 取消選取
+//  3. 雙擊菱形 → 變色(琥珀色)= 進入編輯模式,可以左右拖曳改日期(以天為單位,可拖很多次);
+//     點其他地方 → 離開編輯模式,這時才把最後的日期一次寫進資料庫
 //  4. 專案長條內沒有顯示人力配置時,雙擊長條內的空白處 → 在該日期新增里程碑
 // 資料直接改在頁面的 projects 陣列上,再請頁面重畫(refresh),並保持畫面位置。
 //
@@ -32,10 +33,29 @@ export function attachMilestoneEditor(host, opts) {
     return tl ? captureAnchor(tl, { clientX: x, clientY: y }) : null;
   };
 
-  const select = (id) => {
+  // 拖曳菱形期間只改畫面與本地資料,不寫資料庫;離開編輯模式(點其他地方、或改去編輯別的菱形)時才一次寫入
+  // draft:{ id, original } —— original 是進入編輯模式前資料庫裡的日期
+  let draft = null;
+  const commitDraft = async (ev) => {
+    const d = draft;
+    draft = null;
+    if (!d) return;
+    const found = find(d.id);
+    if (!found) return;
+    const m = found.milestone;
+    if (m.target_date === d.original) return; // 拖回原位 → 不需要寫入
+    try { await updateMilestone(d.id, { target_date: m.target_date }); }
+    catch (err) { m.target_date = d.original; alert(`儲存失敗:${err.message}`); }
+    opts.refresh(anchorAt(ev?.clientX, ev?.clientY));
+  };
+
+  window.addEventListener('beforeunload', (e) => { if (draft) { e.preventDefault(); e.returnValue = ''; } }); // 還沒離開編輯模式就要關頁 / 換頁 → 瀏覽器會先提醒(日期尚未存檔)
+
+  const select = (id, ev) => {
     if (selectedId) msEl(selectedId)?.classList.remove('is-selected');
     selectedId = id;
     if (id) msEl(id)?.classList.add('is-selected');
+    if (draft && draft.id !== id) commitDraft(ev); // 離開(或換到別的)菱形的編輯模式 → 才寫入資料庫
   };
   // 重畫之後,把選取狀態套回去
   const reapplySelection = () => { if (selectedId) { const el = msEl(selectedId); if (el) el.classList.add('is-selected'); else selectedId = null; } };
@@ -48,7 +68,7 @@ export function attachMilestoneEditor(host, opts) {
 
   // ----- 選取與拖曳 -----
   document.addEventListener('pointerdown', (e) => { // 點其他地方 → 取消選取
-    if (selectedId && !e.target.closest?.(`.tl__ms[data-ms-id="${CSS.escape(selectedId)}"] i`)) select(null);
+    if (selectedId && !e.target.closest?.(`.tl__ms[data-ms-id="${CSS.escape(selectedId)}"] i`)) select(null, e);
   });
   host.addEventListener('pointerdown', (e) => {
     if (!opts.canEdit() || e.button !== 0) return;
@@ -81,8 +101,9 @@ export function attachMilestoneEditor(host, opts) {
       dia.removeEventListener('pointercancel', up);
       ms.classList.remove('is-dragging');
       if (to === from || ev.type === 'pointercancel') { ms.style.left = `${((from - startIdx) * ppd).toFixed(1)}px`; if (dateEl) dateEl.textContent = mmdd(from); return; }
-      const date = ymd(to);
-      save(() => { found.milestone.target_date = date; }, () => updateMilestone(id, { target_date: date }), ev);
+      // 只記在本地(畫面已經在新位置);要等離開編輯模式才寫資料庫
+      if (!draft) draft = { id, original: found.milestone.target_date };
+      found.milestone.target_date = ymd(to);
     };
     dia.addEventListener('pointermove', move);
     dia.addEventListener('pointerup', up);
@@ -108,7 +129,7 @@ export function attachMilestoneEditor(host, opts) {
           onCommit: (v) => save(() => { m.target_date = v; }, () => updateMilestone(m.id, { target_date: v }), e),
         });
       }
-      else if (e.target.closest('i')) select(ms.dataset.msId); // 雙擊菱形 → 進入編輯模式(變色,可左右拖曳)
+      else if (e.target.closest('i')) select(ms.dataset.msId, e); // 雙擊菱形 → 進入編輯模式(變色,可左右拖曳)
       return true; // 在里程碑上雙擊,一律不切換人力配置顯示
     }
     const bar = e.target.closest('.tl__bar');
