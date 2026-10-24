@@ -13,6 +13,7 @@ import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
 import { openMemberDialog } from '../components/memberDialog.js';
 import { openAllocationDialog } from '../components/allocationDialog.js';
 import { openRowMenu } from '../components/rowMenu.js';
+import { attachAllocationEditor } from '../components/allocationEditor.js';
 import { MEMBER_SORTS, DEFAULT_MEMBER_SORT, DEFAULT_MEMBER_DIR } from '../utils/memberSort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -34,6 +35,7 @@ let activeRole = 'ALL';
 let keyword = '';
 // 排序只有管理員能用;非管理員永遠是預設順序(依職務、姓名)。選擇會記住
 let canSort = false;
+let allocEditor = null; // 人力配置長條編輯(僅管理員),在 main() 裡建立
 let canEdit = false; // 只有管理員能新增 / 編輯 / 刪除成員;其他帳號為唯讀
 let sortKey = store.get('prm.rsSort', DEFAULT_MEMBER_SORT);
 if (!(sortKey in MEMBER_SORTS)) sortKey = DEFAULT_MEMBER_SORT;
@@ -95,6 +97,7 @@ function render(keepCenter = false, anchor = null) {
   attachTodayHint(tl); // 今天不在畫面範圍時,日期列顯示紅色箭頭提示方向
   attachTodayLine(tl); // 紅線依現在的時間定位,並隨時間慢慢移動
   attachBarLabels(tl); // 名稱標在「目前看得到的最左邊那一段」,捲動時即時更新
+  allocEditor?.reapplySelection(); // 人力配置編輯:重畫後保持選取中的長條
 }
 
 async function main() {
@@ -155,13 +158,18 @@ async function main() {
     openRowMenu(btn, [
       { label: '✎ 編輯成員', onClick: () => editMember(id) },
       { label: '＋ 新增專案配置', onClick: () => openAllocationDialog({ memberId: id, onDone: reloadAfterAlloc }) },
+      { label: rowToggle.isOn(id) ? '▭ 只顯示加總' : '▤ 顯示專案配置', onClick: () => { rowToggle.toggle(id); syncProjBox(); render(true); } }, // 管理員在空白處雙擊是新增配置,所以也在這裡提供切換
     ]);
   });
-  // 雙擊配置長條(僅管理員)→ 編輯 / 刪除這筆配置
-  const editAllocation = (bar) => {
-    const allocation = members.flatMap((m) => m.allocations || []).find((a) => a.id === bar.dataset.alloc);
-    if (allocation) openAllocationDialog({ allocation, memberId: allocation.member_id, onDone: reloadAfterAlloc });
-  };
+  // 人力配置長條(僅管理員):點一下選取後可拖曳左右邊界;雙擊編輯 / 刪除;顯示專案配置時,雙擊成員右邊的空白處 → 新增配置
+  allocEditor = attachAllocationEditor(timelineEl, {
+    canEdit: () => canEdit,
+    findAllocation: (id) => members.flatMap((m) => m.allocations || []).find((a) => a.id === id),
+    refresh: (anchor) => render(true, anchor),
+    blankArea: (e, row) => rowToggle.isOn(row.dataset.id) && !e.target.closest('.rs__bar'), // 顯示專案配置時,長條以外的軌道區域
+    openEdit: (allocation) => openAllocationDialog({ allocation, memberId: allocation.member_id, onDone: reloadAfterAlloc }),
+    openAdd: (memberId, startDate) => openAllocationDialog({ memberId, startDate, onDone: reloadAfterAlloc }),
+  });
   timelineEl.addEventListener('dblclick', (e) => { // 雙擊成員名稱欄也能編輯
     if (!canEdit || e.target.closest('.tl__menu') || e.target.closest('.tl__resize')) return;
     const row = e.target.closest('.tl__label')?.closest('.tl__row');
@@ -192,8 +200,7 @@ async function main() {
     const row = e.target.closest('.tl__track')?.closest('.tl__row');
     if (!row) return;
     window.getSelection()?.removeAllRanges();
-    const bar = canEdit ? e.target.closest('[data-alloc]') : null;
-    if (bar) { editAllocation(bar); return; } // 管理員雙擊配置長條:只開啟編輯視窗,不切換顯示方式(viewer 才切換)
+    if (allocEditor?.handleDblClick(e)) return; // 管理員:雙擊配置長條 → 編輯;顯示專案配置時雙擊空白處 → 新增配置;都不切換顯示方式(viewer 才切換)
     const old = timelineEl.querySelector('.tl');
     const anchor = old ? captureAnchor(old, { clientX: e.clientX, clientY: e.clientY }) : null; // 保持被雙擊的那一列位置不動
     rowToggle.toggle(row.dataset.id);

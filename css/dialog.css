@@ -90,7 +90,15 @@
 
 /* 可雙擊編輯的配置長條 */
 .tl__alloc.is-editable, .rs__bar.is-editable { cursor: pointer; }
-.tl__alloc.is-editable:hover, .rs__bar.is-editable:hover { filter: brightness(.93); box-shadow: 0 0 0 2px var(--amber); }
+.tl__alloc.is-editable:hover, .rs__bar.is-editable:hover { filter: brightness(.93); }
+
+/* 選取中的配置長條:外框變色(琥珀色),兩側邊界可左右拖曳 */
+.tl__alloc.is-selected, .rs__bar.is-selected { outline: 2px solid var(--amber); outline-offset: 0; z-index: 3; filter: none; }
+.alloc-h { position: absolute; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 1; }
+.alloc-h--l { left: -4px; }
+.alloc-h--r { right: -4px; }
+.is-selected > .alloc-h { pointer-events: auto; cursor: ew-resize; }
+.tl__alloc.is-dragging, .rs__bar.is-dragging { opacity: .85; }
 
 /* ---------- 里程碑編輯(僅管理員) ---------- */
 .tl__ms.is-editable i { cursor: pointer; }

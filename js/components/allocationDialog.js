@@ -12,7 +12,7 @@ import { escapeHtml as esc } from '../utils/escape.js';
 //  - 下方即時提示「該成員在這段期間的合計負荷」,超過 LOAD_THRESHOLDS.high 時以警示色顯示(只提醒,不阻擋儲存)
 //  - 儲存、刪除成功後呼叫 onDone({ projectId, memberId }),由頁面重新載入資料
 //  - 沒有「點背景關閉」,避免誤觸而遺失輸入;按 Esc 或「取消」才會關閉
-export async function openAllocationDialog({ allocation = null, projectId = null, memberId = null, onDone }) {
+export async function openAllocationDialog({ allocation = null, projectId = null, memberId = null, startDate = null, onDone }) {
   let members; let projects;
   try {
     [members, projects] = await Promise.all([getMembers(), getProjects()]); // 取得最新資料,負荷提示才準確
@@ -30,8 +30,9 @@ export async function openAllocationDialog({ allocation = null, projectId = null
   const initProject = allocation?.project_id ?? lockProject ?? '';
   const initMember = allocation?.member_id ?? lockMember ?? '';
   const proj0 = projects.find((p) => p.id === initProject);
-  const startInit = allocation?.start_date ?? proj0?.start_date ?? today;
-  const endInit = allocation?.end_date ?? proj0?.end_date ?? startInit;
+  // startDate:從時間軸空白處雙擊進來時,開始日期帶入點到的日期;結束日期帶入專案結束日(不早於開始日才用),否則同一天
+  const startInit = allocation?.start_date ?? startDate ?? proj0?.start_date ?? today;
+  const endInit = allocation?.end_date ?? (startDate ? (proj0?.end_date && proj0.end_date >= startDate ? proj0.end_date : startDate) : (proj0?.end_date ?? startInit));
   const pctInit = allocation?.percentage ?? 100;
 
   const fixedBox = (label, text) => `<div class="dlg__f"><span>${label}</span><div class="dlg__fixed">${esc(text)}</div></div>`;
@@ -128,7 +129,7 @@ export async function openAllocationDialog({ allocation = null, projectId = null
   num.addEventListener('input', () => { if (num.value !== '' && !Number.isNaN(Number(num.value))) range.value = Math.max(0, Math.min(100, Number(num.value))); updateLoad(); });
 
   // 新增時:換專案 → 若日期還沒被手動改過,自動帶入該專案的開始 / 結束日期
-  let datesTouched = isEdit;
+  let datesTouched = isEdit || !!startDate;
   form.elements.start_date.addEventListener('input', () => { datesTouched = true; });
   form.elements.end_date.addEventListener('input', () => { datesTouched = true; });
   form.elements.project_id?.addEventListener('change', (e) => {

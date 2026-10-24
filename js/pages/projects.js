@@ -16,6 +16,7 @@ import { openProjectDialog } from '../components/projectDialog.js';
 import { openAllocationDialog } from '../components/allocationDialog.js';
 import { openRowMenu } from '../components/rowMenu.js';
 import { attachMilestoneEditor } from '../components/milestoneEditor.js';
+import { attachAllocationEditor } from '../components/allocationEditor.js';
 import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -40,6 +41,7 @@ let zoom = store.get('prm.zoom', 'quarter');
 // 是否在專案長條內顯示人力配置(預設顯示)。可整體切換(右上角 tri-state checkbox),也可雙擊某個專案右邊的空白處單獨切換
 const rowToggle = createRowToggle(store.get('prm.alloc', '1') !== '0');
 let memberColors = new Map();
+let allocEditor = null; // 人力配置長條編輯(僅管理員),在 main() 裡建立
 let msEditor = null; // 里程碑編輯(僅管理員),在 main() 裡建立
 let canEdit = false; // 只有管理員(app_metadata.role = 'admin')能新增 / 編輯 / 刪除專案;其他帳號為唯讀
 // 「專案」欄的寬度(使用者拖曳調整後會記住;預設 LABEL_W)
@@ -94,6 +96,7 @@ function render(keepCenter = false, anchor = null) {
   attachTodayHint(tl); // 今天不在畫面範圍時,日期列顯示紅色箭頭提示方向
   attachTodayLine(tl); // 紅線依現在的時間定位,並隨時間慢慢移動
   attachBarLabels(tl); // 名稱標在「目前看得到的最左邊那一段」,捲動時即時更新
+  allocEditor?.reapplySelection(); // 人力配置編輯:重畫後保持選取中的長條
   msEditor?.reapplySelection(); // 里程碑編輯:重畫後保持選取中的菱形
 }
 
@@ -149,13 +152,18 @@ async function main() {
     openRowMenu(btn, [
       { label: '✎ 編輯專案', onClick: () => editProject(id) },
       { label: '＋ 新增成員配置', onClick: () => openAllocationDialog({ projectId: id, onDone: reloadAfterAlloc }) },
+      { label: rowToggle.isOn(id) ? '▭ 隱藏人力配置' : '▤ 顯示人力配置', onClick: () => { rowToggle.toggle(id); syncAllocBox(); render(true); } }, // 管理員在長條內雙擊是編輯,所以也在這裡提供切換
     ]);
   });
-  // 雙擊配置長條(僅管理員)→ 編輯 / 刪除這筆配置
-  const editAllocation = (bar) => {
-    const allocation = projects.flatMap((p) => p.allocations || []).find((a) => a.id === bar.dataset.alloc);
-    if (allocation) openAllocationDialog({ allocation, projectId: allocation.project_id, onDone: reloadAfterAlloc });
-  };
+  // 人力配置長條(僅管理員):點一下選取後可拖曳左右邊界;雙擊編輯 / 刪除;顯示人力配置時,雙擊專案長條內的空白處 → 新增配置
+  allocEditor = attachAllocationEditor(timelineEl, {
+    canEdit: () => canEdit,
+    findAllocation: (id) => projects.flatMap((p) => p.allocations || []).find((a) => a.id === id),
+    refresh: (anchor) => render(true, anchor),
+    blankArea: (e, row) => !!e.target.closest('.tl__bar') && rowToggle.isOn(row.dataset.id),
+    openEdit: (allocation) => openAllocationDialog({ allocation, projectId: allocation.project_id, onDone: reloadAfterAlloc }),
+    openAdd: (projectId, startDate) => openAllocationDialog({ projectId, startDate, onDone: reloadAfterAlloc }),
+  });
   msEditor = attachMilestoneEditor(timelineEl, {
     canEdit: () => canEdit,
     projects: () => projects,
@@ -193,8 +201,7 @@ async function main() {
     if (!row) return;
     window.getSelection()?.removeAllRanges();
     if (msEditor?.handleDblClick(e)) return; // 管理員:雙擊里程碑名稱 / 日期 / 菱形,或在沒顯示人力配置的長條內雙擊 → 里程碑編輯,不切換顯示
-    const bar = canEdit ? e.target.closest('[data-alloc]') : null;
-    if (bar) { editAllocation(bar); return; } // 管理員雙擊配置長條:只開啟編輯視窗,不切換顯示方式(viewer 才切換)
+    if (allocEditor?.handleDblClick(e)) return; // 管理員:雙擊配置長條 → 編輯;顯示人力配置時雙擊專案長條內空白處 → 新增配置;都不切換顯示方式(viewer 才切換)
     const old = timelineEl.querySelector('.tl');
     const anchor = old ? captureAnchor(old, { clientX: e.clientX, clientY: e.clientY }) : null; // 保持被雙擊的那一列位置不動
     rowToggle.toggle(row.dataset.id);
