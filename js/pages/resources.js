@@ -11,6 +11,8 @@ import { attachColumnResize } from '../components/columnResize.js';
 import { escapeHtml } from '../utils/escape.js';
 import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
 import { openMemberDialog } from '../components/memberDialog.js';
+import { openAllocationDialog } from '../components/allocationDialog.js';
+import { openRowMenu } from '../components/rowMenu.js';
 import { MEMBER_SORTS, DEFAULT_MEMBER_SORT, DEFAULT_MEMBER_DIR } from '../utils/memberSort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -140,12 +142,28 @@ async function main() {
   const knownRoles = () => [...new Set(members.map((m) => String(m.role ?? '').trim()).filter(Boolean))].sort();
   $('#add-member').addEventListener('click', () => { if (canEdit) openMemberDialog({ roles: knownRoles(), onDone: reload }); });
   const editMember = (id) => { if (!canEdit) return; const member = members.find((m) => m.id === id); if (member) openMemberDialog({ member, roles: knownRoles(), onDone: reload }); };
+  // 專案成員配置:完成後重新載入;若該成員目前只顯示加總,自動改成顯示專案配置,免得存完看不到
+  const reloadAfterAlloc = ({ memberId } = {}) => {
+    if (memberId && !rowToggle.isOn(memberId)) rowToggle.toggle(memberId);
+    return reload(null);
+  };
+  // 名稱欄右上角「⋮」下拉選單:編輯成員、新增專案配置
   timelineEl.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-edit]');
-    if (btn) editMember(btn.dataset.edit);
+    const btn = canEdit ? e.target.closest('[data-menu]') : null;
+    if (!btn) return;
+    const id = btn.dataset.menu;
+    openRowMenu(btn, [
+      { label: '✎ 編輯成員', onClick: () => editMember(id) },
+      { label: '＋ 新增專案配置', onClick: () => openAllocationDialog({ memberId: id, onDone: reloadAfterAlloc }) },
+    ]);
   });
+  // 雙擊配置長條(僅管理員)→ 編輯 / 刪除這筆配置
+  const editAllocation = (bar) => {
+    const allocation = members.flatMap((m) => m.allocations || []).find((a) => a.id === bar.dataset.alloc);
+    if (allocation) openAllocationDialog({ allocation, memberId: allocation.member_id, onDone: reloadAfterAlloc });
+  };
   timelineEl.addEventListener('dblclick', (e) => { // 雙擊成員名稱欄也能編輯
-    if (!canEdit || e.target.closest('.tl__edit') || e.target.closest('.tl__resize')) return;
+    if (!canEdit || e.target.closest('.tl__menu') || e.target.closest('.tl__resize')) return;
     const row = e.target.closest('.tl__label')?.closest('.tl__row');
     if (row) { window.getSelection()?.removeAllRanges(); editMember(row.dataset.id); }
   });
@@ -170,10 +188,12 @@ async function main() {
     syncProjBox();
     render(true);
   });
-  timelineEl.addEventListener('dblclick', (e) => { // 雙擊成員右邊的配置區:切換該成員的顯示方式
+  timelineEl.addEventListener('dblclick', (e) => { // 雙擊成員右邊的配置區:切換該成員的顯示方式(管理員雙擊配置長條則是編輯配置)
     const row = e.target.closest('.tl__track')?.closest('.tl__row');
     if (!row) return;
     window.getSelection()?.removeAllRanges();
+    const bar = canEdit ? e.target.closest('[data-alloc]') : null;
+    if (bar) { editAllocation(bar); return; } // 管理員雙擊配置長條:只開啟編輯視窗,不切換顯示方式(viewer 才切換)
     const old = timelineEl.querySelector('.tl');
     const anchor = old ? captureAnchor(old, { clientX: e.clientX, clientY: e.clientY }) : null; // 保持被雙擊的那一列位置不動
     rowToggle.toggle(row.dataset.id);

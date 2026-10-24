@@ -32,7 +32,7 @@ function memberItems(m) {
       customer: a.projects?.customer ?? '',
       model: a.projects?.model ?? '(未知專案)',
       pct: a.percentage,
-      start: a.start_date, end: a.end_date,
+      start: a.start_date, end: a.end_date, id: a.id,
       from: dayIndex(a.start_date), to: dayIndex(a.end_date),
     }));
 }
@@ -62,7 +62,7 @@ function packLanes(items) {
   return lanes;
 }
 
-function renderBars(lanes, x, ppd, colors, rowKey) {
+function renderBars(lanes, x, ppd, colors, rowKey, canEdit = false) {
   return lanes.map((lane, i) => {
     markJoins(lane.items); // 同一專案日期相連的配置,銜接處不要圓角
     const named = new Set(); // 初始畫面:同一專案在最左邊放得下名稱的那一段標示名稱;捲動後由 barLabels.js 改成「目前看得到的最左邊那一段」
@@ -81,9 +81,9 @@ function renderBars(lanes, x, ppd, colors, rowKey) {
       const { bg, fg } = allocColor(pct, colors.get(it.key) ?? 205);
       const name = `${it.customer} ${it.model}`.trim();
       const group = escapeHtml(`${rowKey}|${i}|${it.key}`);
-      return `<div class="rs__bar${joinClass(it)}" style="left:${x(it.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:${PAD + i * (LANE_H + LANE_GAP)}px;background:${bg};color:${fg}"
+      return `<div class="rs__bar${joinClass(it)}${canEdit ? ' is-editable' : ''}"${canEdit ? ` data-alloc="${escapeHtml(it.id)}"` : ''} style="left:${x(it.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:${PAD + i * (LANE_H + LANE_GAP)}px;background:${bg};color:${fg}"
       data-lg="${group}" data-x="${x(it.from).toFixed(1)}" data-w="${width.toFixed(1)}" data-name-w="${Math.ceil(textW(full, 12) + 14)}" data-label-name="${escapeHtml(full)}" data-label-other="${escapeHtml(other)}"
-      title="${escapeHtml(name)} · ${pct}% · ${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}"><span class="rs__text bar-label"${text ? '' : ' hidden'}>${escapeHtml(text)}</span></div>`;
+      title="${escapeHtml(name)} · ${pct}% · ${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}${canEdit ? '(雙擊編輯 / 刪除)' : ''}"><span class="rs__text bar-label"${text ? '' : ' hidden'}>${escapeHtml(text)}</span></div>`;
     }).join('');
   }).join('');
 }
@@ -181,7 +181,7 @@ function renderRow(m, ctx) {
     const lanes = packLanes(items);
     const n = lanes.length;
     if (n) rowH = Math.max(MIN_ROW_H, PAD * 2 + n * LANE_H + (n - 1) * LANE_GAP);
-    const bars = n ? renderBars(lanes, ctx.x, ctx.ppd, ctx.colors, m.id) : none;
+    const bars = n ? renderBars(lanes, ctx.x, ctx.ppd, ctx.colors, m.id, ctx.canEdit) : none;
     // track = bars + renderFrames(sumSegments(items, range), n, ctx.x, ctx.ppd);
 	track = bars;
   } else {
@@ -194,7 +194,7 @@ function renderRow(m, ctx) {
     <div class="tl__row" data-id="${escapeHtml(m.id)}" style="--row-h:${rowH}px">
       <div class="tl__label" title="${memberHintTitle(m)}">
         <div class="tl__model">${escapeHtml(m.name)}</div>
-        ${ctx.canEdit ? `<button type="button" class="tl__edit" data-edit="${escapeHtml(m.id)}" title="編輯 / 刪除這位成員(也可以在成員名稱上雙擊)">✎ 編輯</button>` : ''}
+        ${ctx.canEdit ? `<button type="button" class="tl__menu" data-menu="${escapeHtml(m.id)}" aria-haspopup="menu" aria-expanded="false" aria-label="更多操作" title="更多操作(編輯成員、新增專案配置)">⋮</button>` : ''}
         <div class="tl__sub">${role ? `<span class="badge badge--role">${escapeHtml(role)}</span>` : ''}</div>
       </div>
       <div class="tl__track" style="width:${ctx.totalW}px">${track}</div>
@@ -206,7 +206,7 @@ function renderRow(m, ctx) {
  * @param members  含 allocations(及其 projects)的成員陣列,依顯示順序排列
  * @param ppd      每天幾個 px(縮放比例)
  * @param unit     刻度單位:'month' | 'quarter' | 'year'
- * @param opts     { projectColors: 專案顏色表, canEdit: 是否顯示成員名稱欄的「編輯」按鈕(僅管理員), showProjects: 是否顯示專案配置(true/false,或 (成員id) => boolean 逐成員決定;不顯示時只顯示各時期投入%加總) }
+ * @param opts     { projectColors: 專案顏色表, canEdit: 是否顯示成員名稱欄的「⋮」選單與可雙擊編輯的配置長條(僅管理員), showProjects: 是否顯示專案配置(true/false,或 (成員id) => boolean 逐成員決定;不顯示時只顯示各時期投入%加總) }
  */
 export function renderResourceTimeline(members, ppd = ZOOMS.quarter, unit = 'quarter', opts = {}) {
   if (!members.length) return '<div class="state-msg">沒有符合條件的成員。</div>';

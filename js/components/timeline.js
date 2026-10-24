@@ -64,7 +64,7 @@ function buildLanes(p) {
     if (!byMember.has(key)) byMember.set(key, { key, name: a.members?.name ?? '(未知成員)', role: a.members?.role ?? '', items: [] });
     byMember.get(key).items.push({
       from: dayIndex(a.start_date), to: dayIndex(a.end_date),
-      pct: a.percentage, start: a.start_date, end: a.end_date,
+      pct: a.percentage, start: a.start_date, end: a.end_date, id: a.id,
     });
   });
 
@@ -126,7 +126,7 @@ export function buildMemberColors(projects) {
   return colors;
 }
 
-function renderAllocs(lanes, x, ppd, colors, rowKey) {
+function renderAllocs(lanes, x, ppd, colors, rowKey, canEdit = false) {
   return lanes.map((lane, i) => {
     let named = false; // 初始畫面:同一列(同一人)在最左邊放得下姓名的那一段標示姓名;捲動後由 barLabels.js 改成「目前看得到的最左邊那一段」
     markJoins(lane.items); // 日期相連的配置,銜接處不要圓角
@@ -139,9 +139,9 @@ function renderAllocs(lanes, x, ppd, colors, rowKey) {
       const { bg, fg } = allocColor(pct, colors.get(it.key) ?? 205);
       const role = it.role ? `(${escapeHtml(it.role)})` : '';
       const group = escapeHtml(`${rowKey}|${i}`);
-      return `<div class="tl__alloc${joinClass(it)}" style="left:${x(it.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:calc(var(--bar-top) + ${4 + i * (LANE_H + LANE_GAP)}px);background:${bg};color:${fg}"
+      return `<div class="tl__alloc${joinClass(it)}${canEdit ? ' is-editable' : ''}"${canEdit ? ` data-alloc="${escapeHtml(it.id)}"` : ''} style="left:${x(it.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:calc(var(--bar-top) + ${4 + i * (LANE_H + LANE_GAP)}px);background:${bg};color:${fg}"
       data-lg="${group}" data-x="${x(it.from).toFixed(1)}" data-w="${width.toFixed(1)}" data-name-w="${nameW}" data-label-name="${escapeHtml(it.name)}" data-label-other=""
-      title="${escapeHtml(it.name)}${role} ${pct}%:${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}"><span class="tl__al bar-label"${showText ? '' : ' hidden'}>${escapeHtml(showText ? it.name : '')}</span></div>`;
+      title="${escapeHtml(it.name)}${role} ${pct}%:${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}${canEdit ? '(雙擊編輯 / 刪除)' : ''}"><span class="tl__al bar-label"${showText ? '' : ' hidden'}>${escapeHtml(showText ? it.name : '')}</span></div>`;
     }).join('');
   }).join('');
 }
@@ -171,14 +171,14 @@ function renderRow(row, ctx) {
       </span>`).join('');
     track = `
       <div class="tl__bar tl__bar--${barStyle}" style="left:${left.toFixed(1)}px;width:${width.toFixed(1)}px"
-        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}"></div>${ctx.isShown(p.id) ? renderAllocs(lanes, x, ppd, ctx.colors, p.id) : ''}${markers}`;
+        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}"></div>${ctx.isShown(p.id) ? renderAllocs(lanes, x, ppd, ctx.colors, p.id, ctx.canEdit) : ''}${markers}`;
   }
 
   return `
     <div class="tl__row" data-id="${escapeHtml(p.id)}" style="--bar-h:${row.barH}px;--row-h:${row.rowH}px">
       <div class="tl__label">
         <div class="tl__model" title="${escapeHtml(p.customer)} ${escapeHtml(p.model)}"><span class="tl__customer">${escapeHtml(p.customer)}</span> <span class="tl__modelname">${escapeHtml(p.model)}</span></div>
-        ${ctx.canEdit ? `<button type="button" class="tl__edit" data-edit="${escapeHtml(p.id)}" title="編輯 / 刪除這個專案(也可以在專案名稱上雙擊)">✎ 編輯</button>` : ''}
+        ${ctx.canEdit ? `<button type="button" class="tl__menu" data-menu="${escapeHtml(p.id)}" aria-haspopup="menu" aria-expanded="false" aria-label="更多操作" title="更多操作(編輯專案、新增成員配置)">⋮</button>` : ''}
         <div class="tl__sub">
           <span class="badge badge--${status}">${escapeHtml(STATUS_LABELS[status].split(' ')[0])}</span>
         </div>
@@ -191,7 +191,7 @@ function renderRow(row, ctx) {
  * @param projects  含 milestones 的專案陣列
  * @param ppd       每天幾個 px(縮放比例)
  * @param unit      刻度單位:'month' | 'quarter' | 'year'(每一格代表多久)
- * @param opts      { showAllocations: 是否在專案長條內顯示人力配置(true/false,或 (專案id) => boolean 逐專案決定;預設 true), memberColors: 成員顏色表, canEdit: 是否顯示專案名稱欄的「編輯」按鈕(僅管理員) }
+ * @param opts      { showAllocations: 是否在專案長條內顯示人力配置(true/false,或 (專案id) => boolean 逐專案決定;預設 true), memberColors: 成員顏色表, canEdit: 是否顯示專案名稱欄的「⋮」選單與可雙擊編輯的配置長條(僅管理員) }
  */
 export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', opts = {}) {
   const isShown = typeof opts.showAllocations === 'function' ? opts.showAllocations : () => opts.showAllocations !== false;

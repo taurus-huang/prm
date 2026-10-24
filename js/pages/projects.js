@@ -13,6 +13,8 @@ import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
 import { STATUS_ORDER, DEFAULT_FILTERS } from '../utils/constants.js';
 import { baseStatus, matchesFilter } from '../utils/status.js';
 import { openProjectDialog } from '../components/projectDialog.js';
+import { openAllocationDialog } from '../components/allocationDialog.js';
+import { openRowMenu } from '../components/rowMenu.js';
 import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -131,12 +133,28 @@ async function main() {
   };
   $('#add-project').addEventListener('click', () => { if (canEdit) openProjectDialog({ onDone: reload }); });
   const editProject = (id) => { if (!canEdit) return; const project = projects.find((p) => p.id === id); if (project) openProjectDialog({ project, onDone: reload }); };
+  // 專案成員配置:完成後重新載入;若該專案目前隱藏人力配置,自動改成顯示,免得存完看不到
+  const reloadAfterAlloc = ({ projectId } = {}) => {
+    if (projectId && !rowToggle.isOn(projectId)) rowToggle.toggle(projectId);
+    return reload(null);
+  };
+  // 名稱欄右上角「⋮」下拉選單:編輯專案、新增成員配置
   timelineEl.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-edit]');
-    if (btn) editProject(btn.dataset.edit);
+    const btn = canEdit ? e.target.closest('[data-menu]') : null;
+    if (!btn) return;
+    const id = btn.dataset.menu;
+    openRowMenu(btn, [
+      { label: '✎ 編輯專案', onClick: () => editProject(id) },
+      { label: '＋ 新增成員配置', onClick: () => openAllocationDialog({ projectId: id, onDone: reloadAfterAlloc }) },
+    ]);
   });
+  // 雙擊配置長條(僅管理員)→ 編輯 / 刪除這筆配置
+  const editAllocation = (bar) => {
+    const allocation = projects.flatMap((p) => p.allocations || []).find((a) => a.id === bar.dataset.alloc);
+    if (allocation) openAllocationDialog({ allocation, projectId: allocation.project_id, onDone: reloadAfterAlloc });
+  };
   timelineEl.addEventListener('dblclick', (e) => { // 雙擊專案名稱欄也能編輯
-    if (!canEdit || e.target.closest('.tl__edit') || e.target.closest('.tl__resize')) return;
+    if (!canEdit || e.target.closest('.tl__menu') || e.target.closest('.tl__resize')) return;
     const row = e.target.closest('.tl__label')?.closest('.tl__row');
     if (row) { window.getSelection()?.removeAllRanges(); editProject(row.dataset.id); }
   });
@@ -161,10 +179,12 @@ async function main() {
     syncAllocBox();
     render(true);
   });
-  timelineEl.addEventListener('dblclick', (e) => { // 雙擊專案右邊的時間軸區:切換該專案的人力配置顯示
+  timelineEl.addEventListener('dblclick', (e) => { // 雙擊專案右邊的時間軸區:切換該專案的人力配置顯示(管理員雙擊配置長條則是編輯配置)
     const row = e.target.closest('.tl__track')?.closest('.tl__row');
     if (!row) return;
     window.getSelection()?.removeAllRanges();
+    const bar = canEdit ? e.target.closest('[data-alloc]') : null;
+    if (bar) { editAllocation(bar); return; } // 管理員雙擊配置長條:只開啟編輯視窗,不切換顯示方式(viewer 才切換)
     const old = timelineEl.querySelector('.tl');
     const anchor = old ? captureAnchor(old, { clientX: e.clientX, clientY: e.clientY }) : null; // 保持被雙擊的那一列位置不動
     rowToggle.toggle(row.dataset.id);
