@@ -33,6 +33,7 @@ function getMilestones(p) {
   return (p.milestones || [])
     .filter((m) => m.target_date)
     .map((m) => ({
+      id: m.id,
       name: String(m.phase ?? '').trim() || '(未命名)',
       date: m.target_date,
       idx: dayIndex(m.target_date),
@@ -161,8 +162,8 @@ function renderRow(row, ctx) {
     const left = x(ext.from);
     const width = Math.max(6, (ext.to - ext.from) * ppd);
     const markers = ms.map((m) => `
-      <span class="tl__ms" style="left:${x(m.idx).toFixed(1)}px;--lv:${m.level}"
-        title="${escapeHtml(m.name)} : ${escapeHtml(m.date)}${m.note ? ` , ${escapeHtml(m.note)}` : ''}">
+      <span class="tl__ms${ctx.canEdit ? ' is-editable' : ''}"${ctx.canEdit ? ` data-ms-id="${escapeHtml(m.id)}"` : ''} style="left:${x(m.idx).toFixed(1)}px;--lv:${m.level}"
+        title="${escapeHtml(m.name)} : ${escapeHtml(m.date)}${m.note ? ` , ${escapeHtml(m.note)}` : ''}${ctx.canEdit ? '\n雙擊名稱或日期可修改;點菱形後可左右拖曳' : ''}">
         ${tall ? '<span class="tl__vline"></span>' : ''}
         ${m.level ? '<s class="tl__stem tl__stem--up"></s><s class="tl__stem tl__stem--dn"></s>' : ''}
         <em class="tl__md">${mmdd(m.idx)}</em>

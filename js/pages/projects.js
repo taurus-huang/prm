@@ -15,6 +15,7 @@ import { baseStatus, matchesFilter } from '../utils/status.js';
 import { openProjectDialog } from '../components/projectDialog.js';
 import { openAllocationDialog } from '../components/allocationDialog.js';
 import { openRowMenu } from '../components/rowMenu.js';
+import { attachMilestoneEditor } from '../components/milestoneEditor.js';
 import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -39,6 +40,7 @@ let zoom = store.get('prm.zoom', 'quarter');
 // 是否在專案長條內顯示人力配置(預設顯示)。可整體切換(右上角 tri-state checkbox),也可雙擊某個專案右邊的空白處單獨切換
 const rowToggle = createRowToggle(store.get('prm.alloc', '1') !== '0');
 let memberColors = new Map();
+let msEditor = null; // 里程碑編輯(僅管理員),在 main() 裡建立
 let canEdit = false; // 只有管理員(app_metadata.role = 'admin')能新增 / 編輯 / 刪除專案;其他帳號為唯讀
 // 「專案」欄的寬度(使用者拖曳調整後會記住;預設 LABEL_W)
 const LABEL_KEY = 'prm.labelW.projects';
@@ -92,6 +94,7 @@ function render(keepCenter = false, anchor = null) {
   attachTodayHint(tl); // 今天不在畫面範圍時,日期列顯示紅色箭頭提示方向
   attachTodayLine(tl); // 紅線依現在的時間定位,並隨時間慢慢移動
   attachBarLabels(tl); // 名稱標在「目前看得到的最左邊那一段」,捲動時即時更新
+  msEditor?.reapplySelection(); // 里程碑編輯:重畫後保持選取中的菱形
 }
 
 async function main() {
@@ -153,6 +156,12 @@ async function main() {
     const allocation = projects.flatMap((p) => p.allocations || []).find((a) => a.id === bar.dataset.alloc);
     if (allocation) openAllocationDialog({ allocation, projectId: allocation.project_id, onDone: reloadAfterAlloc });
   };
+  msEditor = attachMilestoneEditor(timelineEl, {
+    canEdit: () => canEdit,
+    projects: () => projects,
+    allocShown: (id) => rowToggle.isOn(id),
+    refresh: (anchor) => render(true, anchor),
+  });
   timelineEl.addEventListener('dblclick', (e) => { // 雙擊專案名稱欄也能編輯
     if (!canEdit || e.target.closest('.tl__menu') || e.target.closest('.tl__resize')) return;
     const row = e.target.closest('.tl__label')?.closest('.tl__row');
@@ -183,6 +192,7 @@ async function main() {
     const row = e.target.closest('.tl__track')?.closest('.tl__row');
     if (!row) return;
     window.getSelection()?.removeAllRanges();
+    if (msEditor?.handleDblClick(e)) return; // 管理員:雙擊里程碑名稱 / 日期 / 菱形,或在沒顯示人力配置的長條內雙擊 → 里程碑編輯,不切換顯示
     const bar = canEdit ? e.target.closest('[data-alloc]') : null;
     if (bar) { editAllocation(bar); return; } // 管理員雙擊配置長條:只開啟編輯視窗,不切換顯示方式(viewer 才切換)
     const old = timelineEl.querySelector('.tl');

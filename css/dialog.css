@@ -89,5 +89,46 @@
 .dlg__load--warn { color: #8a5a00; background: #fff4d6; border: 1px solid #f2d58a; border-radius: var(--radius); padding: 6px 10px; }
 
 /* 可雙擊編輯的配置長條 */
-.is-editable { cursor: pointer; }
-.is-editable:hover { filter: brightness(.93); box-shadow: 0 0 0 2px var(--amber); }
+.tl__alloc.is-editable, .rs__bar.is-editable { cursor: pointer; }
+.tl__alloc.is-editable:hover, .rs__bar.is-editable:hover { filter: brightness(.93); box-shadow: 0 0 0 2px var(--amber); }
+
+/* ---------- 里程碑編輯(僅管理員) ---------- */
+.tl__ms.is-editable i { cursor: pointer; }
+.tl__ms.is-selected i { background: var(--amber); box-shadow: 0 0 0 1px #8a5a00; cursor: ew-resize; } /* 選取中:變色,可左右拖曳 */
+.tl__ms.is-selected { z-index: 3; }
+.tl__ms.is-dragging i { box-shadow: 0 0 0 1px #8a5a00, 0 0 0 5px rgba(242, 169, 0, .3); }
+.tl__ms.is-editable .tl__mn, .tl__ms.is-editable .tl__md { cursor: text; }
+
+/* 就地修改的輸入框 */
+.inl {
+  position: fixed; z-index: 1100; height: 30px; padding: 2px 8px;
+  font: inherit; font-size: 13px; color: var(--ink);
+  border: 2px solid var(--amber); border-radius: var(--radius); background: #fff;
+  box-shadow: 0 4px 14px rgba(22, 33, 43, .25);
+}
+.inl:focus-visible { outline: none; } /* 已有琥珀色外框,不再疊加全域的聚焦外框 */
+
+/* 新增里程碑的小視窗 */
+.mspop {
+  position: fixed; z-index: 1100; width: 240px; display: grid; gap: 8px; padding: 12px;
+  background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 28px rgba(22, 33, 43, .3);
+  font-size: 14px;
+}
+.mspop label { display: grid; gap: 2px; font-weight: 500; }
+.mspop input { font: inherit; font-size: 14px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--radius); }
+.mspop__err { margin: 0; color: var(--danger); font-size: 13px; }
+.mspop__row { display: flex; justify-content: flex-end; gap: 8px; }
+.mspop .btn { padding: 4px 12px; font-size: 14px; }
+
+/* 就地修改輸入框下方的備選清單 */
+.inl__menu {
+  position: fixed; z-index: 1100; padding: 4px;
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(22, 33, 43, .22);
+}
+.inl__menu button {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: 13px;
+  padding: 4px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer;
+}
+.inl__menu button:hover { background: var(--petrol-soft); }
+.inl__menu button[aria-selected="true"] { font-weight: 600; }
