@@ -1,12 +1,14 @@
 import { updateAllocation } from '../api/allocations.js';
 import { captureAnchor } from './scrollAnchor.js';
+import { showConfirmBar } from './confirmBar.js';
 import { dayIndex, ymd } from '../utils/date.js';
 
 // 時間軸上的人力配置(allocation)長條編輯(僅管理員),專案總覽與人力資源總覽共用:
 //  1. (edgeDrag 為 true 的頁面才有)點一下配置長條 → 外框變色(琥珀色)= 選取,此時可拖曳左右邊界:
 //     - 游標在左 / 右邊界上變成左右箭頭,並在邊界上方顯示該邊界的日期(左 = 開始日期、右 = 結束日期)
 //     - 拖左邊界只改開始日期(結束日期不動),拖右邊界只改結束日期(開始日期不動);拖曳中上方日期即時跟著變
-//     - 拖曳期間只改畫面,不寫資料庫;點其他地方 → 外框變回原樣、不能再拖,這時才把最後的日期一次寫進資料庫
+//     - 拖曳期間只改畫面,不寫資料庫;調整過日期後,長條旁出現「確定 / 取消」:按「確定」才寫進資料庫;
+//       按「取消」或點其他地方 → 放棄修改,外框變回原樣、不能再拖
 //  2. 雙擊配置長條 → 開啟編輯 / 刪除視窗
 //  3. 顯示人力配置時,雙擊「空白處」→ 開啟新增視窗,開始日期帶入滑鼠所在的日期(哪裡算空白處由頁面的 blankArea 決定)
 // 長條需要 data-alloc="配置 id",且(edgeDrag 時)內含兩個把手 <i class="alloc-h" data-h="l|r">(只有選取中才吃滑鼠事件)。
@@ -37,23 +39,45 @@ export function attachAllocationEditor(host, opts) {
   const hideTip = () => { tip?.remove(); tip = null; };
   let dragging = false;
 
-  // 拖曳邊界期間只改畫面與本地資料,不寫資料庫;離開選取狀態(點其他地方、或改選別的長條)時才一次寫入
+  // 拖曳邊界期間只改畫面與本地資料,不寫資料庫。調整過日期後,長條旁邊出現「確定 / 取消」:
+  //   確定 → 才寫入資料庫;取消、或點其他地方、或改選別的長條 → 視為取消,日期退回原本的
   // draft:{ id, start, end } —— start / end 是選取前資料庫裡的日期
   let draft = null;
-  const commitDraft = async (ev) => {
+  let confirm = null;
+  const closeConfirm = () => { confirm?.close(); confirm = null; };
+  const cancelDraft = (ev) => { // 放棄修改:日期退回原本的並重畫
     const d = draft;
     draft = null;
+    closeConfirm();
+    if (!d) return;
+    const a = opts.findAllocation(d.id);
+    if (a) { a.start_date = d.start; a.end_date = d.end; }
+    opts.refresh(anchorAt(ev?.clientX, ev?.clientY));
+  };
+  const commitDraft = async (ev) => { // 確定:寫入資料庫
+    const d = draft;
+    draft = null;
+    closeConfirm();
     if (!d) return;
     const a = opts.findAllocation(d.id);
     if (!a) return;
-    if (a.start_date === d.start && a.end_date === d.end) return; // 拖回原位 → 不需要寫入
-    try {
-      await updateAllocation(d.id, { project_id: a.project_id, member_id: a.member_id, start_date: a.start_date, end_date: a.end_date, percentage: a.percentage });
-    } catch (err) {
-      a.start_date = d.start; a.end_date = d.end;
-      alert(`儲存失敗:${err.message}`);
+    if (a.start_date !== d.start || a.end_date !== d.end) {
+      try {
+        await updateAllocation(d.id, { project_id: a.project_id, member_id: a.member_id, start_date: a.start_date, end_date: a.end_date, percentage: a.percentage });
+      } catch (err) {
+        a.start_date = d.start; a.end_date = d.end;
+        alert(`儲存失敗:${err.message}`);
+      }
     }
     opts.refresh(anchorAt(ev?.clientX, ev?.clientY));
+  };
+  const showConfirm = (id) => {
+    closeConfirm();
+    confirm = showConfirmBar({
+      getEl: () => barEl(id),
+      onOk: (e) => { commitDraft(e); select(null); },
+      onCancel: (e) => { cancelDraft(e); select(null); },
+    });
   };
 
   const select = (id, ev) => {
@@ -61,15 +85,15 @@ export function attachAllocationEditor(host, opts) {
     selectedId = id;
     if (id) barEl(id)?.classList.add('is-selected');
     hideTip();
-    if (draft && draft.id !== id) commitDraft(ev); // 離開(或換到別的)長條的選取狀態 → 才寫入資料庫
+    if (draft && draft.id !== id) cancelDraft(ev); // 離開(或換到別的)長條的選取狀態而沒按「確定」→ 視為取消
   };
   const reapplySelection = () => { if (selectedId) { const el = barEl(selectedId); if (el) el.classList.add('is-selected'); else selectedId = null; } };
 
   if (edgeDrag) {
-    window.addEventListener('beforeunload', (e) => { if (draft) { e.preventDefault(); e.returnValue = ''; } }); // 日期尚未存檔就要關頁 / 換頁 → 瀏覽器會先提醒
+    window.addEventListener('beforeunload', (e) => { if (draft) { e.preventDefault(); e.returnValue = ''; } }); // 日期尚未按「確定」就要關頁 / 換頁 → 瀏覽器會先提醒
 
-    document.addEventListener('pointerdown', (e) => { // 點其他地方 → 取消選取(此時才寫資料庫)
-      if (selectedId && !e.target.closest?.(`[data-alloc="${CSS.escape(selectedId)}"]`)) select(null, e);
+    document.addEventListener('pointerdown', (e) => { // 點其他地方 → 取消選取(有未確定的修改就放棄)
+      if (selectedId && !e.target.closest?.(`[data-alloc="${CSS.escape(selectedId)}"]`) && !e.target.closest?.('.cfm')) select(null, e);
     });
 
     // 滑鼠移到選取中長條的左 / 右邊界:上方顯示該邊界的日期(拖曳中由 move 更新)
@@ -105,6 +129,7 @@ export function attachAllocationEditor(host, opts) {
       handle.setPointerCapture(e.pointerId);
       bar.classList.add('is-dragging');
       dragging = true;
+      closeConfirm(); // 拖曳中先收起「確定 / 取消」,放開後再出現
       const label = () => (side === 'l' ? `開始 ${ymd(nf)}` : `結束 ${ymd(nt)}`);
       const paint = () => {
         bar.style.left = `${((nf - startIdx) * ppd).toFixed(1)}px`;
@@ -124,10 +149,12 @@ export function attachAllocationEditor(host, opts) {
         bar.classList.remove('is-dragging');
         dragging = false;
         hideTip();
-        if ((nf === from && nt === to) || ev.type === 'pointercancel') { nf = from; nt = to; paint(); hideTip(); return; }
-        // 只記在本地(畫面已經在新位置);要等離開選取狀態才寫資料庫
+        if ((nf === from && nt === to) || ev.type === 'pointercancel') { nf = from; nt = to; paint(); hideTip(); if (draft) showConfirm(id); return; }
+        // 只記在本地(畫面已經在新位置);要按「確定」才寫資料庫
         if (!draft) draft = { id, start: a0.start_date, end: a0.end_date };
         a0.start_date = ymd(nf); a0.end_date = ymd(nt);
+        if (a0.start_date === draft.start && a0.end_date === draft.end) { draft = null; return; } // 拖回原位 → 沒有修改,不需要確認
+        showConfirm(id);
       };
       handle.addEventListener('pointermove', move);
       handle.addEventListener('pointerup', up);

@@ -1,6 +1,7 @@
 import { updateMilestone, createMilestone } from '../api/milestones.js';
 import { inlineEdit, openMilestoneForm } from './inlineEdit.js';
 import { captureAnchor } from './scrollAnchor.js';
+import { showConfirmBar } from './confirmBar.js';
 import { dayIndex, ymd } from '../utils/date.js';
 import { mmdd } from './timeAxis.js';
 import { TIMELINE_PHASE_ORDER } from '../utils/constants.js';
@@ -9,7 +10,7 @@ import { TIMELINE_PHASE_ORDER } from '../utils/constants.js';
 //  1. 雙擊里程碑名稱 → 就地修改名稱
 //  2. 雙擊里程碑日期 → 就地修改日期
 //  3. 單擊菱形 → 變色(琥珀色)= 進入編輯模式,可以左右拖曳改日期(以天為單位,可拖很多次);雙擊菱形 → 「編輯里程碑」視窗(名稱、日期、備註);
-//     點其他地方 → 離開編輯模式,這時才把最後的日期一次寫進資料庫
+//     調整過日期後,菱形旁出現「確定 / 取消」:按「確定」才寫進資料庫;按「取消」或點其他地方 = 放棄修改
 //  4. 專案長條內沒有顯示人力配置時,雙擊長條內的空白處 → 在該日期新增里程碑
 // 資料直接改在頁面的 projects 陣列上,再請頁面重畫(refresh),並保持畫面位置。
 //
@@ -33,29 +34,51 @@ export function attachMilestoneEditor(host, opts) {
     return tl ? captureAnchor(tl, { clientX: x, clientY: y }) : null;
   };
 
-  // 拖曳菱形期間只改畫面與本地資料,不寫資料庫;離開編輯模式(點其他地方、或改去編輯別的菱形)時才一次寫入
+  // 拖曳菱形期間只改畫面與本地資料,不寫資料庫。調整過日期後,菱形旁邊出現「確定 / 取消」:
+  //   確定 → 才寫入資料庫;取消、或點其他地方、或改去編輯別的菱形 → 視為取消,日期退回原本的
   // draft:{ id, original } —— original 是進入編輯模式前資料庫裡的日期
   let draft = null;
-  const commitDraft = async (ev) => {
+  let confirm = null;
+  const closeConfirm = () => { confirm?.close(); confirm = null; };
+  const cancelDraft = (ev) => { // 放棄修改:日期退回原本的並重畫
     const d = draft;
     draft = null;
+    closeConfirm();
+    if (!d) return;
+    const found = find(d.id);
+    if (found) found.milestone.target_date = d.original;
+    opts.refresh(anchorAt(ev?.clientX, ev?.clientY));
+  };
+  const commitDraft = async (ev) => { // 確定:寫入資料庫
+    const d = draft;
+    draft = null;
+    closeConfirm();
     if (!d) return;
     const found = find(d.id);
     if (!found) return;
     const m = found.milestone;
-    if (m.target_date === d.original) return; // 拖回原位 → 不需要寫入
-    try { await updateMilestone(d.id, { target_date: m.target_date }); }
-    catch (err) { m.target_date = d.original; alert(`儲存失敗:${err.message}`); }
+    if (m.target_date !== d.original) {
+      try { await updateMilestone(d.id, { target_date: m.target_date }); }
+      catch (err) { m.target_date = d.original; alert(`儲存失敗:${err.message}`); }
+    }
     opts.refresh(anchorAt(ev?.clientX, ev?.clientY));
   };
+  const showConfirm = (id) => {
+    closeConfirm();
+    confirm = showConfirmBar({
+      getEl: () => msEl(id)?.querySelector('i'),
+      onOk: (e) => { commitDraft(e); select(null); },
+      onCancel: (e) => { cancelDraft(e); select(null); },
+    });
+  };
 
-  window.addEventListener('beforeunload', (e) => { if (draft) { e.preventDefault(); e.returnValue = ''; } }); // 還沒離開編輯模式就要關頁 / 換頁 → 瀏覽器會先提醒(日期尚未存檔)
+  window.addEventListener('beforeunload', (e) => { if (draft) { e.preventDefault(); e.returnValue = ''; } }); // 日期尚未按「確定」就要關頁 / 換頁 → 瀏覽器會先提醒
 
   const select = (id, ev) => {
     if (selectedId) msEl(selectedId)?.classList.remove('is-selected');
     selectedId = id;
     if (id) msEl(id)?.classList.add('is-selected');
-    if (draft && draft.id !== id) commitDraft(ev); // 離開(或換到別的)菱形的編輯模式 → 才寫入資料庫
+    if (draft && draft.id !== id) cancelDraft(ev); // 離開(或換到別的)菱形的編輯模式而沒按「確定」→ 視為取消
   };
   // 重畫之後,把選取狀態套回去
   const reapplySelection = () => { if (selectedId) { const el = msEl(selectedId); if (el) el.classList.add('is-selected'); else selectedId = null; } };
@@ -68,7 +91,7 @@ export function attachMilestoneEditor(host, opts) {
 
   // ----- 選取與拖曳 -----
   document.addEventListener('pointerdown', (e) => { // 點其他地方 → 取消選取
-    if (selectedId && !e.target.closest?.(`.tl__ms[data-ms-id="${CSS.escape(selectedId)}"] i`)) select(null, e);
+    if (selectedId && !e.target.closest?.(`.tl__ms[data-ms-id="${CSS.escape(selectedId)}"] i`) && !e.target.closest?.('.cfm')) select(null, e);
   });
   host.addEventListener('pointerdown', (e) => {
     if (!opts.canEdit() || e.button !== 0) return;
@@ -77,6 +100,7 @@ export function attachMilestoneEditor(host, opts) {
     if (!ms) return;
     const id = ms.dataset.msId;
     if (id !== selectedId) select(id, e); // 單擊菱形 → 進入編輯模式(變色);同一下按住就能直接拖
+    if (!dia.isConnected) return; // 剛才放棄了別的菱形未確定的修改而重畫 → 這個菱形已被換掉,下次再按
 
     const found = find(id);
     const tl = host.querySelector('.tl');
@@ -90,6 +114,7 @@ export function attachMilestoneEditor(host, opts) {
     let to = from;
     dia.setPointerCapture(e.pointerId);
     ms.classList.add('is-dragging');
+    closeConfirm(); // 拖曳中先收起「確定 / 取消」,放開後再出現
     const move = (ev) => {
       to = from + Math.round((ev.clientX - x0) / ppd);
       ms.style.left = `${((to - startIdx) * ppd).toFixed(1)}px`;
@@ -100,10 +125,12 @@ export function attachMilestoneEditor(host, opts) {
       dia.removeEventListener('pointerup', up);
       dia.removeEventListener('pointercancel', up);
       ms.classList.remove('is-dragging');
-      if (to === from || ev.type === 'pointercancel') { ms.style.left = `${((from - startIdx) * ppd).toFixed(1)}px`; if (dateEl) dateEl.textContent = mmdd(from); return; }
-      // 只記在本地(畫面已經在新位置);要等離開編輯模式才寫資料庫
+      if (to === from || ev.type === 'pointercancel') { ms.style.left = `${((from - startIdx) * ppd).toFixed(1)}px`; if (dateEl) dateEl.textContent = mmdd(from); if (draft) showConfirm(id); return; }
+      // 只記在本地(畫面已經在新位置);要按「確定」才寫資料庫
       if (!draft) draft = { id, original: found.milestone.target_date };
       found.milestone.target_date = ymd(to);
+      if (found.milestone.target_date === draft.original) { draft = null; return; } // 拖回原位 → 沒有修改,不需要確認
+      showConfirm(id);
     };
     dia.addEventListener('pointermove', move);
     dia.addEventListener('pointerup', up);

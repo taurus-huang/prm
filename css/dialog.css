@@ -147,3 +147,10 @@
   padding: 2px 8px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
   color: #fff; background: #3b2f00; border-radius: 4px; box-shadow: 0 2px 8px rgba(22, 33, 43, .3);
 }
+
+/* 拖曳調整日期後的「確定 / 取消」按鈕列 */
+.cfm {
+  position: fixed; z-index: 1200; display: flex; gap: 6px; padding: 4px;
+  background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(22, 33, 43, .28);
+}
+.cfm .btn { padding: 2px 12px; font-size: 13px; line-height: 22px; }
