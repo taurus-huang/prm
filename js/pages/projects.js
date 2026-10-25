@@ -138,8 +138,9 @@ async function main() {
       alert(`重新載入失敗:${err.message}`);
     }
   };
-  $('#add-project').addEventListener('click', () => { if (canEdit) openProjectDialog({ onDone: reload }); });
-  const editProject = (id) => { if (!canEdit) return; const project = projects.find((p) => p.id === id); if (project) openProjectDialog({ project, onDone: reload }); };
+  $('#add-project').addEventListener('click', () => { if (canEdit) openProjectDialog({ customers: customerList(), onDone: reload }); });
+  const customerList = () => [...new Set(projects.map((p) => (p.customer || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+  const editProject = (id) => { if (!canEdit) return; const project = projects.find((p) => p.id === id); if (project) openProjectDialog({ project, customers: customerList(), onDone: reload }); };
   // 專案成員配置:完成後重新載入;若該專案目前隱藏人力配置,自動改成顯示,免得存完看不到
   const reloadAfterAlloc = ({ projectId } = {}) => {
     if (projectId && !rowToggle.isOn(projectId)) rowToggle.toggle(projectId);

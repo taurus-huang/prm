@@ -8,7 +8,7 @@ import { escapeHtml as esc } from '../utils/escape.js';
 //  - 欄位:客戶、機種、狀態、開始 / 結束日期、備註,以及里程碑清單(可新增 / 刪除列)
 //  - 儲存、刪除成功後呼叫 onDone(),由頁面重新載入資料
 //  - 沒有「點背景關閉」,避免誤觸而遺失輸入;按 Esc 或「取消」才會關閉
-export function openProjectDialog({ project = null, onDone }) {
+export function openProjectDialog({ project = null, customers = [], onDone }) {
   const isEdit = !!project;
   const original = (project?.milestones || []).slice().sort((a, b) => String(a.target_date ?? '9999').localeCompare(String(b.target_date ?? '9999')));
 
@@ -22,10 +22,10 @@ export function openProjectDialog({ project = null, onDone }) {
       </header>
       <div class="dlg__body">
         <div class="dlg__grid">
-          <label class="dlg__f"><span>客戶 <b>*</b></span><input name="customer" required maxlength="100" autocomplete="off" value="${esc(project?.customer ?? '')}"></label>
+          <label class="dlg__f"><span>客戶 <b>*</b></span><input name="customer" list="dlg-customers" required maxlength="100" autocomplete="off" placeholder="選擇或輸入客戶" value="${esc(project?.customer ?? '')}"><datalist id="dlg-customers">${customers.map((c) => `<option value="${esc(c)}">`).join('')}</datalist></label>
           <label class="dlg__f"><span>機種 <b>*</b></span><input name="model" required maxlength="100" autocomplete="off" value="${esc(project?.model ?? '')}"></label>
           <label class="dlg__f"><span>專案狀態</span>
-            <select name="status">${STATUS_ORDER.map((s) => `<option value="${s}"${(project ? baseStatus(project) : 'BD') === s ? ' selected' : ''}>${esc(STATUS_LABELS[s])}</option>`).join('')}</select></label>
+            <select name="status">${STATUS_ORDER.map((s) => `<option value="${s}"${(project ? baseStatus(project) : 'BD') === s ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
           <span class="dlg__f dlg__f--empty"></span>
           <label class="dlg__f"><span>開始日期</span><input type="date" name="start_date" value="${esc(project?.start_date ?? '')}"></label>
           <label class="dlg__f"><span>結束日期</span><input type="date" name="end_date" value="${esc(project?.end_date ?? '')}"></label>
