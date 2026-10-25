@@ -53,18 +53,21 @@ export function inlineEdit(anchor, { type = 'text', value = '', list = [], onCom
   input.addEventListener('blur', () => finish(true));
 }
 
-// 在滑鼠位置跳出「新增里程碑」小視窗:名稱 + 日期。Enter = 新增;Esc、取消、點外面 = 放棄。
-// opts:{ x, y(視窗座標), date, phases: [建議名稱], onCommit({ phase, date }) }
-export function openMilestoneAdd({ x, y, date, phases = [], onCommit }) {
+// 在滑鼠位置跳出「新增 / 編輯里程碑」小視窗:名稱、日期、備註。Enter(在備註以外)= 確認;Esc、取消、點外面 = 放棄。
+// 新增與編輯同一個樣式,只差在標題與確認按鈕的字。
+// opts:{ title, submitLabel, x, y(視窗座標), phase, date, note, phases: [建議名稱], onCommit({ phase, date, note }) }
+export function openMilestoneForm({ title = '新增里程碑', submitLabel = '新增', x, y, phase = '', date = '', note = '', phases = [], onCommit }) {
+  const q = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const pop = document.createElement('form');
   pop.className = 'mspop';
   pop.innerHTML = `
-    <strong>新增里程碑</strong>
-    <label>名稱<input name="phase" list="mspop-phases" maxlength="30" autocomplete="off" placeholder="EVT、DVT…"></label>
-    <label>日期<input type="date" name="date" value="${date}"></label>
-    <datalist id="mspop-phases">${phases.map((p) => `<option value="${String(p).replace(/"/g, '&quot;')}">`).join('')}</datalist>
+    <strong>${q(title)}</strong>
+    <label>名稱<input name="phase" list="mspop-phases" maxlength="30" autocomplete="off" placeholder="EVT、DVT…" value="${q(phase)}"></label>
+    <label>日期<input type="date" name="date" value="${q(date)}"></label>
+    <label>備註<input name="note" maxlength="200" autocomplete="off" placeholder="(選填)" value="${q(note)}"></label>
+    <datalist id="mspop-phases">${phases.map((p) => `<option value="${q(p)}">`).join('')}</datalist>
     <p class="mspop__err" hidden></p>
-    <div class="mspop__row"><button type="button" class="btn btn--ghost" data-act="cancel">取消</button><button type="submit" class="btn">新增</button></div>`;
+    <div class="mspop__row"><button type="button" class="btn btn--ghost" data-act="cancel">取消</button><button type="submit" class="btn">${q(submitLabel)}</button></div>`;
   document.body.appendChild(pop);
   const w = pop.offsetWidth; const h = pop.offsetHeight;
   pop.style.left = `${Math.max(8, Math.min(x - w / 2, window.innerWidth - w - 8))}px`;
@@ -82,12 +85,13 @@ export function openMilestoneAdd({ x, y, date, phases = [], onCommit }) {
   pop.querySelector('[data-act="cancel"]').addEventListener('click', close);
   pop.addEventListener('submit', (e) => {
     e.preventDefault();
-    const phase = pop.elements.phase.value.trim();
+    const ph = pop.elements.phase.value.trim();
     const d = pop.elements.date.value;
     const err = pop.querySelector('.mspop__err');
-    if (!phase || !d) { err.textContent = !phase ? '請輸入名稱。' : '請選擇日期。'; err.hidden = false; (!phase ? pop.elements.phase : pop.elements.date).focus(); return; }
+    if (!ph || !d) { err.textContent = !ph ? '請輸入名稱。' : '請選擇日期。'; err.hidden = false; (!ph ? pop.elements.phase : pop.elements.date).focus(); return; }
     close();
-    onCommit({ phase, date: d });
+    onCommit({ phase: ph, date: d, note: pop.elements.note.value.trim() });
   });
   pop.elements.phase.focus();
+  pop.elements.phase.select();
 }

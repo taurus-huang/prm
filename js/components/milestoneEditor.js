@@ -1,5 +1,5 @@
 import { updateMilestone, createMilestone } from '../api/milestones.js';
-import { inlineEdit, openMilestoneAdd } from './inlineEdit.js';
+import { inlineEdit, openMilestoneForm } from './inlineEdit.js';
 import { captureAnchor } from './scrollAnchor.js';
 import { dayIndex, ymd } from '../utils/date.js';
 import { mmdd } from './timeAxis.js';
@@ -8,7 +8,7 @@ import { TIMELINE_PHASE_ORDER } from '../utils/constants.js';
 // 專案總覽時間軸上的里程碑編輯(僅管理員):
 //  1. 雙擊里程碑名稱 → 就地修改名稱
 //  2. 雙擊里程碑日期 → 就地修改日期
-//  3. 雙擊菱形 → 變色(琥珀色)= 進入編輯模式,可以左右拖曳改日期(以天為單位,可拖很多次);
+//  3. 單擊菱形 → 變色(琥珀色)= 進入編輯模式,可以左右拖曳改日期(以天為單位,可拖很多次);雙擊菱形 → 「編輯里程碑」視窗(名稱、日期、備註);
 //     點其他地方 → 離開編輯模式,這時才把最後的日期一次寫進資料庫
 //  4. 專案長條內沒有顯示人力配置時,雙擊長條內的空白處 → 在該日期新增里程碑
 // 資料直接改在頁面的 projects 陣列上,再請頁面重畫(refresh),並保持畫面位置。
@@ -76,7 +76,7 @@ export function attachMilestoneEditor(host, opts) {
     const ms = dia?.closest('.tl__ms');
     if (!ms) return;
     const id = ms.dataset.msId;
-    if (id !== selectedId) return; // 還沒進入編輯模式(要先雙擊菱形)→ 不能拖
+    if (id !== selectedId) select(id, e); // 單擊菱形 → 進入編輯模式(變色);同一下按住就能直接拖
 
     const found = find(id);
     const tl = host.querySelector('.tl');
@@ -129,7 +129,15 @@ export function attachMilestoneEditor(host, opts) {
           onCommit: (v) => save(() => { m.target_date = v; }, () => updateMilestone(m.id, { target_date: v }), e),
         });
       }
-      else if (e.target.closest('i')) select(ms.dataset.msId, e); // 雙擊菱形 → 進入編輯模式(變色,可左右拖曳)
+      else { // 雙擊菱形(或其他部分)→ 「編輯里程碑」視窗
+        openMilestoneForm({
+          title: '編輯里程碑', submitLabel: '儲存', x: e.clientX, y: e.clientY,
+          phase: String(m.phase ?? ''), date: m.target_date, note: String(m.note ?? ''), phases: TIMELINE_PHASE_ORDER,
+          onCommit: ({ phase, date, note }) => save(
+            () => { m.phase = phase; m.target_date = date; m.note = note || null; },
+            () => updateMilestone(m.id, { phase, target_date: date, note: note || null }), e),
+        });
+      }
       return true; // 在里程碑上雙擊,一律不切換人力配置顯示
     }
     const bar = e.target.closest('.tl__bar');
@@ -140,11 +148,11 @@ export function attachMilestoneEditor(host, opts) {
       const idx = Number(tl.dataset.startIdx) + Math.floor((e.clientX - track.getBoundingClientRect().left) / Number(tl.dataset.ppd));
       const project = opts.projects().find((p) => p.id === row.dataset.id);
       if (!project) return true;
-      openMilestoneAdd({
+      openMilestoneForm({
         x: e.clientX, y: e.clientY, date: ymd(idx), phases: TIMELINE_PHASE_ORDER, // 名稱建議只列標準階段
-        onCommit: async ({ phase, date }) => {
+        onCommit: async ({ phase, date, note }) => {
           try {
-            const created = await createMilestone(project.id, phase, date);
+            const created = await createMilestone(project.id, phase, date, note);
             (project.milestones ||= []).push(created);
             select(created.id);
           } catch (err) { alert(`新增失敗:${err.message}`); }
