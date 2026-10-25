@@ -99,8 +99,9 @@ export const HOLIDAY_SHADE_UNITS = ['day', 'week', 'tenday'];
 // ============================================================
 // 人力配置長條的「點選後拖曳左右邊界改日期」功能(僅管理員),各頁面分開開關:
 //   resources:人力資源總覽(true = 開啟)
-//   projects :專案總覽(false = 暫時關閉:點長條沒有反應、不會變色、沒有拖曳把手)
+//   projects :專案總覽(true = 開啟)
+// 設成 false 就是關閉:點長條沒有反應、不會變色、沒有拖曳把手
 // 開啟時:點長條 → 外框變色,左右邊界可拖曳(滑鼠在邊界上會顯示該邊界的日期);拖曳期間只改畫面,
 // 點其他地方離開選取狀態時才一次寫入資料庫。(雙擊長條編輯、雙擊空白處新增不受影響。)
 // ============================================================
-export const ALLOC_EDGE_DRAG = { projects: false, resources: true };
+export const ALLOC_EDGE_DRAG = { projects: true, resources: true };
