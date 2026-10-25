@@ -40,7 +40,11 @@ let sortDir = store.get('prm.sortDir', DEFAULT_DIR); // 'asc' 遞增 / 'desc' �
 if (sortDir !== 'asc' && sortDir !== 'desc') sortDir = DEFAULT_DIR;
 let zoom = store.get('prm.zoom', 'quarter');
 // 是否在專案長條內顯示人力配置(預設顯示)。可整體切換(右上角 tri-state checkbox),也可雙擊某個專案右邊的空白處單獨切換
-const rowToggle = createRowToggle(store.get('prm.alloc', '1') !== '0');
+// 顯示模式:'ms' 只有專案里程碑 / 'sum' 里程碑+人力總和 / 'detail' 里程碑+成員細項(舊版只存 prm.alloc 的 1/0,沿用為預設)
+const VIEW_MODES = ['ms', 'sum', 'detail'];
+let viewMode = store.get('prm.viewMode', store.get('prm.alloc', '1') !== '0' ? 'detail' : 'ms');
+if (!VIEW_MODES.includes(viewMode)) viewMode = 'detail';
+const rowToggle = createRowToggle(viewMode === 'detail'); // 以「是否顯示成員細項」記錄;雙擊個別專案可單獨切換
 let memberColors = new Map();
 let allocEditor = null; // 人力配置長條編輯(僅管理員),在 main() 裡建立
 let msEditor = null; // 里程碑編輯(僅管理員),在 main() 裡建立
@@ -87,7 +91,7 @@ function render(keepCenter = false, anchor = null) {
     timelineEl.innerHTML = `<div class="state-msg">${emptyMessage()}</div>`;
     return;
   }
-  timelineEl.innerHTML = renderTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { showAllocations: rowToggle.isOn, canEdit, memberColors, labelW });
+  timelineEl.innerHTML = renderTimeline(rows, ZOOMS[zoom], ZOOM_UNITS[zoom], { showAllocations: rowToggle.isOn, showSum: viewMode === 'sum', canEdit, memberColors, labelW });
   const tl = timelineEl.querySelector('.tl');
   if (!tl) return;
 
@@ -186,16 +190,26 @@ async function main() {
     render(true);
   });
   searchEl.addEventListener('input', () => { keyword = searchEl.value.trim(); render(true); });
-  const allocBox = $('#show-alloc');
+  const modeEl = $('#view-mode');
   const projectIds = () => projects.map((p) => p.id);
-  const syncAllocBox = () => {
+  const syncAllocBox = () => { // 依各專案目前是否顯示成員細項,同步「顯示模式」下拉選單
     const st = rowToggle.state(projectIds());
-    syncTriState(allocBox, st);
-    if (st !== 'some') store.set('prm.alloc', st === 'all' ? '1' : '0');
+    modeEl.querySelector('option[value="mixed"]')?.remove();
+    if (st === 'all') viewMode = 'detail';
+    else if (st === 'none' && viewMode === 'detail') viewMode = 'ms';
+    if (st === 'some') { // 個別專案被雙擊切換過:暫時多一個「部分顯示成員細項」的選項,選其它三種會全部統一
+      modeEl.insertAdjacentHTML('beforeend', '<option value="mixed" disabled>（部分專案顯示成員細項）</option>');
+      modeEl.value = 'mixed';
+    } else {
+      modeEl.value = viewMode;
+      store.set('prm.viewMode', viewMode);
+    }
   };
   syncAllocBox();
-  allocBox.addEventListener('change', () => { // 全部顯示 / 全部不顯示(清掉個別專案的設定)
-    rowToggle.setAll(allocBox.checked);
+  modeEl.addEventListener('change', () => { // 三種模式:全部統一(清掉個別專案的設定)
+    if (!VIEW_MODES.includes(modeEl.value)) return;
+    viewMode = modeEl.value;
+    rowToggle.setAll(viewMode === 'detail');
     syncAllocBox();
     render(true);
   });

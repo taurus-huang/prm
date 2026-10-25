@@ -29,7 +29,7 @@
       <div class="head-tools">
         <span class="count" id="count"></span>
         <button type="button" class="btn" id="add-project" hidden>＋ 新增專案</button>
-        <label class="toggle" id="alloc-toggle"><input type="checkbox" id="show-alloc" checked> 顯示人力配置</label>
+        <label class="toggle" id="alloc-toggle">顯示模式 <select id="view-mode" aria-label="顯示模式"><option value="ms">專案里程碑</option><option value="sum">專案里程碑+人力總和</option><option value="detail">專案里程碑+成員細項</option></select></label>
         <div class="seg" id="zoom" role="group" aria-label="時間軸縮放" title="日期尺度(也可以在時間軸上按住 Ctrl 再滾動滑鼠滾輪)">
           <button type="button" data-zoom="day" aria-pressed="false">日</button>
           <button type="button" data-zoom="week" aria-pressed="false">週</button>

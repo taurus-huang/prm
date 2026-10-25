@@ -1,10 +1,11 @@
 import { todayStr } from '../utils/phase.js';
 import { dayIndex, ymd } from '../utils/date.js';
 import { escapeHtml } from '../utils/escape.js';
-import { STATUS_LABELS, TIMELINE_PHASE_ORDER, ALLOC_EDGE_DRAG } from '../utils/constants.js';
+import { STATUS_LABELS, TIMELINE_PHASE_ORDER, ALLOC_EDGE_DRAG, PROJECT_SUM_COLOR_MAX } from '../utils/constants.js';
 import { baseStatus, styleStatus } from '../utils/status.js';
 import { allocColor, hueForIndex } from '../utils/color.js';
 import { markJoins, joinClass } from '../utils/joins.js';
+import { sumSegments } from './resourceTimeline.js';
 import { ZOOMS, mmdd, textW, computeRange, buildAxis, RESIZE_HANDLE, dayFraction } from './timeAxis.js';
 
 // 專案總覽頁從這裡取用縮放設定(實際定義在 timeAxis.js,與人力資源總覽共用)
@@ -147,6 +148,20 @@ function renderAllocs(lanes, x, ppd, colors, rowKey, canEdit = false) {
   }).join('');
 }
 
+// 「人力總和」模式:把專案所有成員配置依時間切段,每段顯示同時投入的百分比加總(單色,越高越深;不顯示文字,滑鼠停留顯示多行明細)
+function renderSum(lanes, x, ppd) {
+  const items = lanes.flatMap((l) => l.items).map((it) => ({ from: it.from, to: it.to, pct: it.pct, model: it.name }));
+  const segs = sumSegments(items).filter((sg) => sg.sum > 0);
+  const marks = segs.map((sg) => ({ key: 'sum', from: sg.from, to: sg.to }));
+  markJoins(marks);
+  return segs.map((sg, i) => {
+    const width = Math.max(4, (sg.to - sg.from + 1) * ppd);
+    const { bg, fg } = allocColor(Math.min(100, (sg.sum / PROJECT_SUM_COLOR_MAX) * 100), 200);
+    const tip = [`合計 ${sg.sum}% : ${ymd(sg.from)} ~ ${ymd(sg.to)}`, ...sg.parts].map(escapeHtml).join('&#10;');
+    return `<div class="tl__alloc tl__alloc--sum${joinClass(marks[i])}" style="left:${x(sg.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:calc(var(--bar-top) + 4px);background:${bg};color:${fg}" title="${tip}"></div>`;
+  }).join('');
+}
+
 function renderRow(row, ctx) {
   const { p, ms, ext, lanes } = row;
   const { startIdx, ppd, totalW } = ctx;
@@ -172,7 +187,7 @@ function renderRow(row, ctx) {
       </span>`).join('');
     track = `
       <div class="tl__bar tl__bar--${barStyle}" style="left:${left.toFixed(1)}px;width:${width.toFixed(1)}px"
-        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}"></div>${ctx.isShown(p.id) ? renderAllocs(lanes, x, ppd, ctx.colors, p.id, ctx.canEdit) : ''}${markers}`;
+        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}"></div>${ctx.isShown(p.id) ? renderAllocs(lanes, x, ppd, ctx.colors, p.id, ctx.canEdit) : ctx.showSum ? renderSum(lanes, x, ppd) : ''}${markers}`;
   }
 
   return `
@@ -226,7 +241,7 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
   const { ticks, gridlines, band, shade, headH } = buildAxis({ startIdx, end, ppd, unit });
 
   const todayX = x(todayIdx + dayFraction()); // 紅線畫在「今天那一格裡、依現在幾點幾分的比例」的位置
-  const ctx = { startIdx, ppd, totalW, isShown, colors, canEdit: opts.canEdit === true };
+  const ctx = { startIdx, ppd, totalW, isShown, showSum: opts.showSum === true, colors, canEdit: opts.canEdit === true };
   const rowsHtml = rows.map((r) => renderRow(r, ctx)).join('');
 
   return `

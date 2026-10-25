@@ -41,6 +41,8 @@ export const LOAD_THRESHOLDS = {
 // 超過 SUM_COLOR_MAX% 的部分都用最深色(長條上標示的數字仍是實際加總)。
 // 想讓顏色的變化範圍更大或更小,改這個數字即可(例如 150 或 300)。
 export const SUM_COLOR_MAX = 200;
+// 專案總覽「專案里程碑+人力總和」模式的顏色深淺範圍:0% 最淺、PROJECT_SUM_COLOR_MAX% 最深(與人力資源總覽各自獨立)
+export const PROJECT_SUM_COLOR_MAX = 350;
 
 // ============================================================
 // 日期軸的休假日標示
