@@ -6,6 +6,7 @@ import { attachTodayHint } from '../components/todayHint.js';
 import { attachTodayLine } from '../components/todayLine.js';
 import { attachBarLabels } from '../components/barLabels.js';
 import { attachWheelZoom } from '../components/wheelZoom.js';
+import { attachDragPan } from '../components/dragPan.js';
 import { captureAnchor, restoreAnchor } from '../components/scrollAnchor.js';
 import { attachColumnResize } from '../components/columnResize.js';
 import { escapeHtml } from '../utils/escape.js';
@@ -209,6 +210,7 @@ async function main() {
     syncProjBox();
     render(true, anchor);
   });
+  attachDragPan(timelineEl); // 按住滑鼠左鍵拖曳,上下左右移動可視範圍
   attachWheelZoom(timelineEl, { // Ctrl + 滑鼠滾輪調整日期尺度
     getKey: () => zoom,
     onChange: (key, anchor) => {
