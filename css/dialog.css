@@ -95,8 +95,8 @@
 /* 選取中的配置長條:外框變色(琥珀色),兩側邊界可左右拖曳 */
 .tl__alloc.is-selected, .rs__bar.is-selected { outline: 2px solid var(--amber); outline-offset: 0; z-index: 3; filter: none; }
 .alloc-h { position: absolute; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 1; }
-.alloc-h--l { left: -4px; }
-.alloc-h--r { right: -4px; }
+.alloc-h[data-h="l"] { left: -4px; }
+.alloc-h[data-h="r"] { right: -4px; }
 .is-selected > .alloc-h { pointer-events: auto; cursor: ew-resize; }
 .tl__alloc.is-dragging, .rs__bar.is-dragging { opacity: .85; }
 
@@ -140,3 +140,10 @@
 }
 .inl__menu button:hover { background: var(--petrol-soft); }
 .inl__menu button[aria-selected="true"] { font-weight: 600; }
+
+/* 拖曳配置長條邊界時,邊界上方的日期提示 */
+.edge-tip {
+  position: fixed; z-index: 1200; pointer-events: none; white-space: nowrap;
+  padding: 2px 8px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: #fff; background: #3b2f00; border-radius: 4px; box-shadow: 0 2px 8px rgba(22, 33, 43, .3);
+}

@@ -14,6 +14,7 @@ import { openMemberDialog } from '../components/memberDialog.js';
 import { openAllocationDialog } from '../components/allocationDialog.js';
 import { openRowMenu } from '../components/rowMenu.js';
 import { attachAllocationEditor } from '../components/allocationEditor.js';
+import { ALLOC_EDGE_DRAG } from '../utils/constants.js';
 import { MEMBER_SORTS, DEFAULT_MEMBER_SORT, DEFAULT_MEMBER_DIR } from '../utils/memberSort.js';
 
 const $ = (s) => document.querySelector(s);
@@ -163,6 +164,7 @@ async function main() {
   });
   // 人力配置長條(僅管理員):點一下選取後可拖曳左右邊界;雙擊編輯 / 刪除;顯示專案配置時,雙擊成員右邊的空白處 → 新增配置
   allocEditor = attachAllocationEditor(timelineEl, {
+    edgeDrag: ALLOC_EDGE_DRAG.resources,
     canEdit: () => canEdit,
     findAllocation: (id) => members.flatMap((m) => m.allocations || []).find((a) => a.id === id),
     refresh: (anchor) => render(true, anchor),

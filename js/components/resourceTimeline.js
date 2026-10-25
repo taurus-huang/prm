@@ -83,7 +83,7 @@ function renderBars(lanes, x, ppd, colors, rowKey, canEdit = false) {
       const group = escapeHtml(`${rowKey}|${i}|${it.key}`);
       return `<div class="rs__bar${joinClass(it)}${canEdit ? ' is-editable' : ''}"${canEdit ? ` data-alloc="${escapeHtml(it.id)}"` : ''} style="left:${x(it.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:${PAD + i * (LANE_H + LANE_GAP)}px;background:${bg};color:${fg}"
       data-lg="${group}" data-x="${x(it.from).toFixed(1)}" data-w="${width.toFixed(1)}" data-name-w="${Math.ceil(textW(full, 12) + 14)}" data-label-name="${escapeHtml(full)}" data-label-other="${escapeHtml(other)}"
-      title="${escapeHtml(name)} · ${pct}% · ${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}${canEdit ? '(雙擊編輯 / 刪除)' : ''}"><span class="rs__text bar-label"${text ? '' : ' hidden'}>${escapeHtml(text)}</span>${canEdit && ALLOC_EDGE_DRAG ? '<i class="alloc-h" data-h="l"></i><i class="alloc-h" data-h="r"></i>' : ''}</div>`;
+      title="${escapeHtml(name)} · ${pct}% · ${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}${canEdit ? '(雙擊編輯 / 刪除)' : ''}"><span class="rs__text bar-label"${text ? '' : ' hidden'}>${escapeHtml(text)}</span>${canEdit && ALLOC_EDGE_DRAG.resources ? '<i class="alloc-h" data-h="l"></i><i class="alloc-h" data-h="r"></i>' : ''}</div>`;
     }).join('');
   }).join('');
 }

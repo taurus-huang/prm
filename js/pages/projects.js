@@ -10,7 +10,7 @@ import { attachColumnResize } from '../components/columnResize.js';
 import { getLabelW, MIN_LABEL_W } from '../components/timeAxis.js';
 import { escapeHtml } from '../utils/escape.js';
 import { createRowToggle, syncTriState } from '../utils/rowToggle.js';
-import { STATUS_ORDER, DEFAULT_FILTERS } from '../utils/constants.js';
+import { STATUS_ORDER, DEFAULT_FILTERS, ALLOC_EDGE_DRAG } from '../utils/constants.js';
 import { baseStatus, matchesFilter } from '../utils/status.js';
 import { openProjectDialog } from '../components/projectDialog.js';
 import { openAllocationDialog } from '../components/allocationDialog.js';
@@ -157,6 +157,7 @@ async function main() {
   });
   // 人力配置長條(僅管理員):點一下選取後可拖曳左右邊界;雙擊編輯 / 刪除;顯示人力配置時,雙擊專案長條內的空白處 → 新增配置
   allocEditor = attachAllocationEditor(timelineEl, {
+    edgeDrag: ALLOC_EDGE_DRAG.projects,
     canEdit: () => canEdit,
     findAllocation: (id) => projects.flatMap((p) => p.allocations || []).find((a) => a.id === id),
     refresh: (anchor) => render(true, anchor),

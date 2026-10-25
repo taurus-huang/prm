@@ -142,7 +142,7 @@ function renderAllocs(lanes, x, ppd, colors, rowKey, canEdit = false) {
       const group = escapeHtml(`${rowKey}|${i}`);
       return `<div class="tl__alloc${joinClass(it)}${canEdit ? ' is-editable' : ''}"${canEdit ? ` data-alloc="${escapeHtml(it.id)}"` : ''} style="left:${x(it.from).toFixed(1)}px;width:${width.toFixed(1)}px;top:calc(var(--bar-top) + ${4 + i * (LANE_H + LANE_GAP)}px);background:${bg};color:${fg}"
       data-lg="${group}" data-x="${x(it.from).toFixed(1)}" data-w="${width.toFixed(1)}" data-name-w="${nameW}" data-label-name="${escapeHtml(it.name)}" data-label-other=""
-      title="${escapeHtml(it.name)}${role} ${pct}%:${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}${canEdit ? '(雙擊編輯 / 刪除)' : ''}"><span class="tl__al bar-label"${showText ? '' : ' hidden'}>${escapeHtml(showText ? it.name : '')}</span>${canEdit && ALLOC_EDGE_DRAG ? '<i class="alloc-h" data-h="l"></i><i class="alloc-h" data-h="r"></i>' : ''}</div>`;
+      title="${escapeHtml(it.name)}${role} ${pct}%:${escapeHtml(it.start)} ~ ${escapeHtml(it.end)}${canEdit ? '(雙擊編輯 / 刪除)' : ''}"><span class="tl__al bar-label"${showText ? '' : ' hidden'}>${escapeHtml(showText ? it.name : '')}</span>${canEdit && ALLOC_EDGE_DRAG.projects ? '<i class="alloc-h" data-h="l"></i><i class="alloc-h" data-h="r"></i>' : ''}</div>`;
     }).join('');
   }).join('');
 }
