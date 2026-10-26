@@ -209,7 +209,7 @@ function renderRow(row, ctx) {
   }
 
   return `
-    <div class="tl__row" data-id="${escapeHtml(p.id)}" style="--bar-h:${row.barH}px;--row-h:${row.rowH}px">
+    <div class="tl__row" data-id="${escapeHtml(p.id)}" style="--bar-top:${row.barTop}px;--bar-h:${row.barH}px;--row-h:${row.rowH}px">
       <div class="tl__label">
         <div class="tl__model" title="${escapeHtml(p.customer)} ${escapeHtml(p.model)}"><span class="tl__customer">${escapeHtml(p.customer)}</span> <span class="tl__modelname">${escapeHtml(p.model)}</span></div>
         ${ctx.canEdit ? `<button type="button" class="tl__menu" data-menu="${escapeHtml(p.id)}" aria-haspopup="menu" aria-expanded="false" aria-label="更多操作" title="更多操作(編輯專案、新增成員配置)">⋮</button>` : ''}
@@ -247,14 +247,16 @@ export function renderTimeline(projects, ppd = ZOOMS.quarter, unit = 'quarter', 
       return { p, ms, lanes, ext: barExtent(p, ms, lanes, todayIdx) };
     });
 
-  // 標籤錯開層數(所有列一致)決定上下留白;長條高度則依各專案的配置人數增加
+  // 標籤錯開層數「每列各自計算」決定該列上下留白(只有標籤真的擠在一起的列才加高);長條高度則依各專案的配置人數增加
   const maxLevel = Math.max(0, ...rows.flatMap((r) => r.ms.map((m) => m.level)));
-  const barTop = LV_STEP * (maxLevel + 1) + 6;
   rows.forEach((r) => {
+    const lv = Math.max(0, ...r.ms.map((m) => m.level));
     const n = isShown(r.p.id) ? r.lanes.length : 0;
+    r.barTop = LV_STEP * (lv + 1) + 4;
     r.barH = Math.max(BAR_H, n ? 8 + n * LANE_H + (n - 1) * LANE_GAP : 0);
-    r.rowH = barTop + r.barH + 6 + LV_STEP * (maxLevel + 1) + 4;
+    r.rowH = r.barTop + r.barH + LV_STEP * (lv + 1) + 8; // 下方多留 3px 給里程碑名稱
   });
+  const barTop = LV_STEP * (maxLevel + 1) + 4; // 僅作為 .tl 的預設值;各列用自己的 --bar-top 覆蓋
 
   const { ticks, gridlines, band, shade, headH } = buildAxis({ startIdx, end, ppd, unit });
 
