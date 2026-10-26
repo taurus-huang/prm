@@ -125,12 +125,19 @@
   padding: 0 5px; font-size: 11px; line-height: 14px; white-space: nowrap;
 }
 
+/* 菱形顏色:由 timeline.js 依名稱加上 data-c */
+.tl__ms[data-c="blue"]   { --ms-c: #1f6fd1; }
+.tl__ms[data-c="cyan"]   { --ms-c: #00a5b5; }
+.tl__ms[data-c="green"]  { --ms-c: #2e9e4f; }
+.tl__ms[data-c="yellow"] { --ms-c: #e6b800; }
+.tl__ms[data-c="orange"] { --ms-c: #f07d00; }
+.tl__ms[data-c="red"]    { --ms-c: #d32f2f; }
 /* 階段標記:日期在長條上方、名稱在長條下方,位置對齊 target_date */
 .tl__ms { position: absolute; top: 0; width: 0; height: var(--row-h); z-index: 1; }
 .tl__ms i {
   position: absolute; left: -5px; top: calc(var(--bar-top) + var(--bar-h) / 2 - 5px);
   width: 10px; height: 10px; transform: rotate(45deg);
-  background: var(--petrol); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--petrol); /* 所有 milestone 同一個顏色 */
+  background: var(--ms-c, var(--petrol)); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--ms-c, var(--petrol)); /* 顏色依名稱(見 timeline.js 的 MS_COLORS),沒對應到的維持原色 */
 }
 
 .tl__md, .tl__mn {
@@ -148,14 +155,13 @@
 
 /* 專案長條較高時:菱形上下延伸縱線,連到長條的上下邊框(外圍白邊讓線在任何顏色的人力配置條上都看得見) */
 .tl__vline {
-  position: absolute; left: -1px;
-  top: var(--bar-top); height: var(--bar-h); width: 2px;
-  background: var(--petrol);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .85);
+  position: absolute; left: 0;
+  top: var(--bar-top); height: var(--bar-h); width: 0;
+  border-left: 1px solid var(--ms-c, var(--petrol)); /* 用 border 畫線:瀏覽器的框線寬度固定取整數實體像素,不會因位置落在小數像素而忽粗忽細 */
 }
 
 /* 標籤錯開時,用細線連回長條 */
-.tl__stem { position: absolute; left: 0; width: 1px; background: #aab4be; }
+.tl__stem { position: absolute; left: 0; width: 0; border-left: 1px solid var(--ms-c, var(--petrol)); } /* 粗細與 .tl__vline 相同 */
 .tl__stem--up { bottom: calc(var(--row-h) - var(--bar-top)); height: calc(3px + var(--lv) * 15px); }
 .tl__stem--dn { top: calc(var(--bar-top) + var(--bar-h)); height: calc(5px + var(--lv) * 15px); }
 

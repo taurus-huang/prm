@@ -162,6 +162,24 @@ function renderSum(lanes, x, ppd) {
   }).join('');
 }
 
+// 里程碑菱形顏色:名稱只要「包含」這些字串(不分大小寫,如 PrePOC 也算 POC)就用對應顏色;含多個時取最先出現的
+const MS_COLORS = [
+  ['blue', ['KO']],
+  ['cyan', ['POC', 'P1', 'P2', 'Proto']],
+  ['green', ['EVT', 'Alpha']],
+  ['yellow', ['DVT', 'Beta']],
+  ['orange', ['PVT', 'Pilot']],
+  ['red', ['MP', 'FCS']],
+];
+function msColor(name) {
+  let best = null;
+  MS_COLORS.forEach(([c, words]) => words.forEach((w) => {
+    const idx = String(name ?? '').toLowerCase().indexOf(w.toLowerCase());
+    if (idx >= 0 && (!best || idx < best.index)) best = { index: idx, c };
+  }));
+  return best?.c ?? '';
+}
+
 function renderRow(row, ctx) {
   const { p, ms, ext, lanes } = row;
   const { startIdx, ppd, totalW } = ctx;
@@ -177,7 +195,7 @@ function renderRow(row, ctx) {
     const left = x(ext.from);
     const width = Math.max(6, (ext.to - ext.from) * ppd);
     const markers = ms.map((m) => `
-      <span class="tl__ms${ctx.canEdit ? ' is-editable' : ''}"${ctx.canEdit ? ` data-ms-id="${escapeHtml(m.id)}"` : ''} style="left:${x(m.idx).toFixed(1)}px;--lv:${m.level}"
+      <span class="tl__ms${ctx.canEdit ? ' is-editable' : ''}"${msColor(m.name) ? ` data-c="${msColor(m.name)}"` : ''}${ctx.canEdit ? ` data-ms-id="${escapeHtml(m.id)}"` : ''} style="left:${Math.round(x(m.idx))}px;--lv:${m.level}"
         title="${escapeHtml(m.name)} : ${escapeHtml(m.date)}${m.note ? ` , ${escapeHtml(m.note)}` : ''}${ctx.canEdit ? '\n雙擊名稱或日期可修改;單擊菱形後可左右拖曳;雙擊菱形開啟編輯視窗' : ''}">
         ${tall ? '<span class="tl__vline"></span>' : ''}
         ${m.level ? '<s class="tl__stem tl__stem--up"></s><s class="tl__stem tl__stem--dn"></s>' : ''}

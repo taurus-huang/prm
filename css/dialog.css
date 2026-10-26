@@ -102,9 +102,10 @@
 
 /* ---------- 里程碑編輯(僅管理員) ---------- */
 .tl__ms.is-editable i { cursor: pointer; }
-.tl__ms.is-selected i { background: var(--amber); box-shadow: 0 0 0 1px #8a5a00; cursor: ew-resize; } /* 選取中:變色,可左右拖曳 */
+.tl__ms.is-selected i { cursor: ew-resize; animation: ms-blink 1s ease-in-out infinite; } /* 選取中:顏色不變,菱形閃爍(淡出淡入),可左右拖曳 */
+@keyframes ms-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 .tl__ms.is-selected { z-index: 3; }
-.tl__ms.is-dragging i { box-shadow: 0 0 0 1px #8a5a00, 0 0 0 5px rgba(242, 169, 0, .3); }
+.tl__ms.is-dragging i { animation: none; opacity: .6; } /* 拖曳中:停止閃爍,維持半透明 */
 .tl__ms.is-editable .tl__mn, .tl__ms.is-editable .tl__md { cursor: text; }
 
 /* 就地修改的輸入框 */
