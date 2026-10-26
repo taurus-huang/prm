@@ -224,7 +224,7 @@
 .tl__row:last-of-type .tl__label { box-shadow: none; }
 
 /* 滑鼠所在的那一列:整列(名稱欄加右邊軌道)的白底改成淡淡的底色。名稱欄是不透明的,要自己也換一份 */
-.tl__row:hover, .tl__row:hover .tl__label { background: #eef5f8; }
+.tl__row:hover, .tl__row:hover .tl__label { background: #fffbea; }
 
 /* 按住滑鼠拖曳時間軸可視範圍(js/components/dragPan.js) */
 .tl { cursor: grab; }
