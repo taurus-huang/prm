@@ -104,7 +104,7 @@ function barExtent(p, ms, lanes, todayIdx) {
 function assignLevels(ms, x) {
   const lastEnd = [];
   ms.forEach((m) => {
-    const w = Math.max(textW(m.name, 12), textW(mmdd(m.idx), 11)) + 10;
+    const w = Math.max(textW(m.name, 12), textW(mmdd(m.idx), 11));
     const cx = x(m.idx);
     let k = 0;
     while (k < MAX_LEVEL && lastEnd[k] !== undefined && lastEnd[k] > cx - w / 2) k += 1;
