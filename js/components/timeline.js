@@ -100,15 +100,39 @@ function barExtent(p, ms, lanes, todayIdx) {
   return { from: Math.min(from, to), to: Math.max(from, to) };
 }
 
-// 標籤重疊時往外錯開:level 0 緊貼長條,1、2 逐層遠離
+// 標籤重疊時往外錯開：
+// 日期列與名稱列分開判斷，避免兩種不同列的文字互相影響。
 function assignLevels(ms, x) {
-  const lastEnd = [];
+  // 每一層分別記錄日期與名稱的最右側位置
+  const dateLastEnd = [];
+  const nameLastEnd = [];
+
   ms.forEach((m) => {
-    const w = Math.max(textW(m.name, 12), textW(mmdd(m.idx), 11));
+    const dateW = textW(mmdd(m.idx), 11) - 2;
+    const nameW = textW(m.name, 12) - 2;
     const cx = x(m.idx);
+
+    const dateLeft = cx - dateW / 2;
+    const nameLeft = cx - nameW / 2;
+
     let k = 0;
-    while (k < MAX_LEVEL && lastEnd[k] !== undefined && lastEnd[k] > cx - w / 2) k += 1;
-    lastEnd[k] = cx + w / 2;
+
+    while (
+      k < MAX_LEVEL &&
+      (
+        (dateLastEnd[k] !== undefined &&
+          dateLastEnd[k] > dateLeft) ||
+        (nameLastEnd[k] !== undefined &&
+          nameLastEnd[k] > nameLeft)
+      )
+    ) {
+      k += 1;
+    }
+
+    // 更新這一層的日期與名稱位置
+    dateLastEnd[k] = cx + dateW / 2;
+    nameLastEnd[k] = cx + nameW / 2;
+
     m.level = k;
   });
 }
