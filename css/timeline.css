@@ -108,9 +108,9 @@
   border-radius: 4px;
   background: transparent;
 }
-.tl__bar--BD { border-color: #4a5bb0; }
-.tl__bar--NPI { border-color: var(--petrol); }
-.tl__bar--MP { border-color: #2e7d4f; }
+.tl__bar--BD { border-color: #1f6fd1; }   /* 藍 */
+.tl__bar--NPI { border-color: #2e9e4f; }  /* 綠 */
+.tl__bar--MP { border-color: #f07d00; }   /* 橙 */
 .tl__bar--EOL { border-color: #8a3a32; }
 .tl__bar--Pending { border-color: #8b97a3; border-style: dashed; }
 

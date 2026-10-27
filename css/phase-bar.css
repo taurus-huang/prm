@@ -39,8 +39,9 @@
   background: var(--petrol-soft);
   color: var(--petrol);
 }
-.badge--BD { background: #e6e9f3; color: #3a4a8a; }
-.badge--MP { background: #dff1e6; color: #1f6a3f; }
+.badge--BD { background: #e1ecfa; color: #1a559f; }   /* 藍 */
+.badge--NPI { background: #dff1e6; color: #1f6a3f; }  /* 綠 */
+.badge--MP { background: #fdebd6; color: #a85500; }   /* 橙 */
 .badge--EOL { background: #f3e3e1; color: #8a3a32; }
 .badge--Pending { background: #e8ebee; color: #56626d; }
 
