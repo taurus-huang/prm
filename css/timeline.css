@@ -200,10 +200,15 @@
 .tl__w { display: block; font-size: 11px; line-height: 14px; color: var(--muted); }
 
 /* 日尺度:週六、週日與國定假日 */
-.tl__tick--off { background: rgba(86, 100, 114, .14); }
+/* 休假日底色:顏色只在這裡定義一次(週六日 / 台灣 / 兩地同一天 = 灰,泰國 = 淡紅);
+   日期欄位(.tl__tick--off)與貫穿所有列的底色(.tl__off)都讀同一個 --hol */
+:root { --hol-gray: rgba(86, 100, 114, .12); --hol-th: rgba(220, 60, 60, .10); }
+.hol-wk, .hol-tw, .hol-both { --hol: var(--hol-gray); }
+.hol-th { --hol: var(--hol-th); }
+.tl__tick--off { background: var(--hol); }
 .tl__tick--off .tl__d, .tl__tick--off .tl__w { color: var(--danger); font-weight: 600; }
 .tl__shade { position: absolute; z-index: 0; pointer-events: none; left: var(--label-w); top: var(--head-h); bottom: 0; }
-.tl__off { position: absolute; top: 0; bottom: 0; background: rgba(86, 100, 114, .10); }
+.tl__off { position: absolute; top: 0; bottom: 0; background: var(--hol); }
 
 /* ---------- 左側名稱欄的寬度調整把手(標題格右緣) ---------- */
 .tl__resize {

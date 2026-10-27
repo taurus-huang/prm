@@ -1,7 +1,7 @@
 // 時間軸共用:專案總覽與人力資源總覽使用同一套日期軸(刻度、縮放、顯示範圍)
 import { dayIndex, addMonths, ymd, monthOf } from '../utils/date.js';
 import { escapeHtml } from '../utils/escape.js';
-import { HOLIDAYS, MAKEUP_WORKDAYS, HOLIDAY_SHADE_UNITS } from '../utils/constants.js';
+import { HOLIDAYS, THAI_HOLIDAYS, MAKEUP_WORKDAYS, HOLIDAY_SHADE_UNITS } from '../utils/constants.js';
 
 export const LABEL_W = 200; // 左側名稱欄的預設寬度(px);實際寬度記在 .tl 的 CSS 變數 --label-w 上,使用者可拖曳調整
 export const MIN_LABEL_W = 120; // 名稱欄最窄(px)
@@ -65,8 +65,12 @@ export function dayInfo(idx) {
   const wd = weekdayOf(idx);
   const weekend = wd === 0 || wd === 6;
   const makeup = weekend && makeupSet.has(date);
-  const holiday = HOLIDAYS[date] ?? '';
-  return { date, wd, makeup, holiday, off: !makeup && (weekend || Boolean(holiday)) };
+  const tw = HOLIDAYS[date] ?? '';
+  const th = THAI_HOLIDAYS[date] ?? '';
+  const holiday = [tw, th ? `泰國:${th}` : ''].filter(Boolean).join('、');
+  // kind:休假的種類(決定底色):'tw' 台灣假日 / 'th' 泰國假日 / 'both' 兩地都放假 / 'wk' 只有週六日 / '' 上班日
+  const kind = tw && th ? 'both' : tw ? 'tw' : th ? 'th' : (weekend && !makeup) ? 'wk' : '';
+  return { date, wd, makeup, holiday, kind, off: !makeup && (weekend || Boolean(holiday)) };
 }
 
 // 往前對齊到該單位的邊界(週:週一;旬:1/11/21 日;季:1/4/7/10 月 1 日;年:1 月 1 日)
@@ -117,7 +121,7 @@ export function buildAxis({ startIdx, end, ppd, unit }) {
     if (unit === 'day') {
       const info = dayInfo(c);
       const tip = `${info.date} 星期${WEEKDAY_CHARS[info.wd]}${info.holiday ? `・${info.holiday}` : ''}${info.makeup ? '・補班' : ''}`;
-      ticks += `<span class="tl__tick tl__tick--sub${info.off ? ' tl__tick--off' : ''}" style="${pos}" title="${escapeHtml(tip)}"><span class="tl__d">${dayOfMonth(c)}</span><span class="tl__w">${WEEKDAY_CHARS[info.wd]}</span></span>`;
+      ticks += `<span class="tl__tick tl__tick--sub${info.off ? ` tl__tick--off hol-${info.kind || 'wk'}` : ''}" style="${pos}" title="${escapeHtml(tip)}"><span class="tl__d">${dayOfMonth(c)}</span><span class="tl__w">${WEEKDAY_CHARS[info.wd]}</span></span>`;
     } else if (unit === 'week') {
       const { month: m1 } = monthOf(c);
       const { month: m2 } = monthOf(n - 1);
@@ -142,14 +146,16 @@ export function buildAxis({ startIdx, end, ppd, unit }) {
   // 休假日底色(哪些尺度要標示由 constants.js 的 HOLIDAY_SHADE_UNITS 決定):
   // 逐天判斷,相鄰的休假日合併成一塊(例如週六日、連續的春節假期各是一塊),不會出現接縫
   if (HOLIDAY_SHADE_UNITS.includes(unit)) {
+    // 底色依種類分色(週六日灰、台灣假日琥珀、泰國假日藍、兩地同一天紫);同種類相鄰的日子合併成一塊
     let runStart = null;
+    let runKind = '';
     for (let c = startIdx; c <= end; c += 1) {
-      const off = c < end && dayInfo(c).off;
-      if (off && runStart === null) runStart = c;
-      if (!off && runStart !== null) {
-        shade += `<i class="tl__off" style="left:${x(runStart).toFixed(1)}px;width:${(x(c) - x(runStart)).toFixed(1)}px"></i>`;
+      const kind = c < end ? (dayInfo(c).kind) : '';
+      if (runStart !== null && kind !== runKind) {
+        shade += `<i class="tl__off hol-${runKind}" style="left:${x(runStart).toFixed(1)}px;width:${(x(c) - x(runStart)).toFixed(1)}px"></i>`;
         runStart = null;
       }
+      if (kind && runStart === null) { runStart = c; runKind = kind; }
     }
   }
 
