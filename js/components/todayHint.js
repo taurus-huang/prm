@@ -34,7 +34,7 @@ export function attachTodayHint(tl) {
 
   const jump = () => {
     const vis = tl.clientWidth - getLabelW(tl);
-    tl.scrollTo({ left: Math.max(0, todayX() - vis * 0.3), behavior: 'smooth' }); // 今天落在可視區 30% 處,與首次顯示一致
+    tl.scrollTo({ left: Math.max(0, todayX() - vis / 2), behavior: 'smooth' }); // 今天落在可視區(扣掉名稱欄)的正中間
   };
   left.addEventListener('click', jump);
   right.addEventListener('click', jump);
