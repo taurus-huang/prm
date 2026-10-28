@@ -56,7 +56,7 @@ export function inlineEdit(anchor, { type = 'text', value = '', list = [], onCom
 // 在滑鼠位置跳出「新增 / 編輯里程碑」小視窗:名稱、日期、備註。Enter(在備註以外)= 確認;Esc、取消、點外面 = 放棄。
 // 新增與編輯同一個樣式,只差在標題與確認按鈕的字。
 // opts:{ title, submitLabel, x, y(視窗座標), phase, date, note, phases: [建議名稱], onCommit({ phase, date, note }) }
-export function openMilestoneForm({ title = '新增里程碑', submitLabel = '新增', x, y, phase = '', date = '', note = '', phases = [], onCommit }) {
+export function openMilestoneForm({ title = '新增里程碑', submitLabel = '新增', x, y, phase = '', date = '', note = '', phases = [], onCommit, onDelete = null }) {
   const q = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const pop = document.createElement('form');
   pop.className = 'mspop';
@@ -67,7 +67,7 @@ export function openMilestoneForm({ title = '新增里程碑', submitLabel = '�
     <label>備註<input name="note" maxlength="200" autocomplete="off" placeholder="(選填)" value="${q(note)}"></label>
     <datalist id="mspop-phases">${phases.map((p) => `<option value="${q(p)}">`).join('')}</datalist>
     <p class="mspop__err" hidden></p>
-    <div class="mspop__row"><button type="button" class="btn btn--ghost" data-act="cancel">取消</button><button type="submit" class="btn">${q(submitLabel)}</button></div>`;
+    <div class="mspop__row">${onDelete ? '<button type="button" class="btn dlg__del" data-act="delete">刪除</button><span class="mspop__sp"></span>' : ''}<button type="button" class="btn btn--ghost" data-act="cancel">取消</button><button type="submit" class="btn">${q(submitLabel)}</button></div>`;
   document.body.appendChild(pop);
   const w = pop.offsetWidth; const h = pop.offsetHeight;
   pop.style.left = `${Math.max(8, Math.min(x - w / 2, window.innerWidth - w - 8))}px`;
@@ -83,6 +83,16 @@ export function openMilestoneForm({ title = '新增里程碑', submitLabel = '�
   document.addEventListener('pointerdown', onOutside, true);
   document.addEventListener('keydown', onKey, true);
   pop.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  const delBtn = pop.querySelector('[data-act="delete"]');
+  if (delBtn) { // 刪除要按兩次:第一次按變成「確定刪除」並提示,第二次才真的刪
+    let armed = false;
+    delBtn.addEventListener('click', () => {
+      const err = pop.querySelector('.mspop__err');
+      if (!armed) { armed = true; delBtn.textContent = '確定刪除'; err.textContent = '再按一次「確定刪除」就會刪除這個里程碑,無法復原。'; err.hidden = false; return; }
+      close();
+      onDelete();
+    });
+  }
   pop.addEventListener('submit', (e) => {
     e.preventDefault();
     const ph = pop.elements.phase.value.trim();

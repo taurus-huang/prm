@@ -1,4 +1,4 @@
-import { updateMilestone, createMilestone } from '../api/milestones.js';
+import { updateMilestone, createMilestone, deleteMilestone } from '../api/milestones.js';
 import { inlineEdit, openMilestoneForm } from './inlineEdit.js';
 import { captureAnchor } from './scrollAnchor.js';
 import { showConfirmBar } from './confirmBar.js';
@@ -163,6 +163,14 @@ export function attachMilestoneEditor(host, opts) {
           onCommit: ({ phase, date, note }) => save(
             () => { m.phase = phase; m.target_date = date; m.note = note || null; },
             () => updateMilestone(m.id, { phase, target_date: date, note: note || null }), e),
+          onDelete: async () => { // 刪除這個里程碑
+            if (selectedId === m.id) { draft = null; closeConfirm(); selectedId = null; }
+            try {
+              await deleteMilestone(m.id);
+              found.project.milestones = (found.project.milestones || []).filter((x) => x.id !== m.id);
+            } catch (err) { alert(`刪除失敗:${err.message}`); }
+            opts.refresh(anchorAt(e.clientX, e.clientY));
+          },
         });
       }
       return true; // 在里程碑上雙擊,一律不切換人力配置顯示

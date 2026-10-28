@@ -18,3 +18,9 @@ export async function createMilestone(projectId, phase, targetDate, note = null)
   if (error) throw error;
   return data;
 }
+
+// 刪除單一里程碑(RLS 只允許管理員)
+export async function deleteMilestone(id) {
+  const { error } = await supabase.from('milestones').delete().eq('id', id);
+  if (error) throw error;
+}

@@ -135,6 +135,7 @@
 .mspop input { font: inherit; font-size: 14px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--radius); }
 .mspop__err { margin: 0; color: var(--danger); font-size: 13px; }
 .mspop__row { display: flex; justify-content: flex-end; gap: 8px; }
+.mspop__sp { flex: 1; } /* 「刪除」靠左,取消 / 儲存靠右 */
 .mspop .btn { padding: 4px 12px; font-size: 14px; }
 
 /* 就地修改輸入框下方的備選清單 */
