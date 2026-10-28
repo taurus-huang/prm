@@ -237,3 +237,11 @@
 .tl { cursor: grab; }
 .tl__head, .tl__label { cursor: default; } /* 日期列與專案名稱欄不能拖曳平移 */
 .tl.is-panning, .tl.is-panning * { cursor: grabbing !important; user-select: none; }
+
+/* 滑鼠位置的縱線與日期(js/components/cursorLine.js):1px、淡色,不吃滑鼠事件 */
+.tl__cursor { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px solid rgba(22, 33, 43, .28); pointer-events: none; }
+.tl__cursor-date {
+  position: absolute; bottom: 5px; z-index: 3; pointer-events: none; white-space: nowrap; /* 與紅色「今天」旗標同一個垂直位置(.tl__today-flag 的 bottom: 5px),重疊時蓋在它上面(z-index 較高) */
+  padding: 0 6px; border: 1px solid var(--line); border-radius: 4px;
+  background: #fff; color: var(--ink); font-size: 11px; line-height: 16px; font-variant-numeric: tabular-nums;
+}
