@@ -41,7 +41,8 @@
       </div>
     </div>
     <div class="toolbar">
-      <input type="search" id="search" placeholder="搜尋客戶或機種" aria-label="搜尋客戶或機種">
+      <input type="text" class="combo" id="filter-customer" placeholder="客戶" aria-label="依客戶篩選" autocomplete="off">
+      <input type="text" class="combo" id="filter-model" placeholder="機種" aria-label="依機種篩選" autocomplete="off">
       <label class="sort" title="排序方式">排序 <select id="sort" aria-label="排序方式"></select>
         <select id="sort-dir" aria-label="遞增或遞減"><option value="asc">遞增</option><option value="desc">遞減</option></select></label>
       <div class="chips" id="chips" role="group" aria-label="依狀態篩選"></div>

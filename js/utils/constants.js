@@ -16,9 +16,9 @@ export const STATUS_LABELS = {
 // ============================================================
 // 專案總覽的篩選 checkbox
 // 每個 checkbox 對應一種 status,勾選哪一種就顯示哪一種。
-// DEFAULT_FILTERS:頁面一開啟時預設勾選的項目,想改預設值就改這裡(可用:'BD'、'NPI'、'MP'、'EOL'、'Pending')。
+// DEFAULT_FILTERS:頁面一開啟時預設勾選的項目(目前 BD、NPI、MP、Pending),想改預設值就改這裡(可用:'BD'、'NPI'、'MP'、'EOL'、'Pending')。
 // ============================================================
-export const DEFAULT_FILTERS = ['BD', 'NPI', 'MP'];
+export const DEFAULT_FILTERS = ['BD', 'NPI', 'MP', 'Pending'];
 
 
 // 時間軸排序提示:同一天有多個里程碑時,依此順序排列;不在清單內的自訂名稱排在後面

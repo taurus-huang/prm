@@ -17,6 +17,7 @@ import { openProjectDialog } from '../components/projectDialog.js';
 import { openAllocationDialog } from '../components/allocationDialog.js';
 import { openRowMenu } from '../components/rowMenu.js';
 import { attachMilestoneEditor } from '../components/milestoneEditor.js';
+import { attachCombobox } from '../components/combobox.js';
 import { attachProjectBarEditor } from '../components/projectBarEditor.js';
 import { attachAllocationEditor } from '../components/allocationEditor.js';
 import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
@@ -24,7 +25,8 @@ import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
 const $ = (s) => document.querySelector(s);
 const timelineEl = $('#timeline');
 const chipsEl = $('#chips');
-const searchEl = $('#search');
+const customerFilterEl = $('#filter-customer');
+const modelFilterEl = $('#filter-model');
 const countEl = $('#count');
 
 const store = {
@@ -34,7 +36,8 @@ const store = {
 
 let projects = [];
 const selected = new Set(DEFAULT_FILTERS); // 被勾選的篩選項目(預設值在 constants.js 的 DEFAULT_FILTERS)
-let keyword = '';
+let customerKw = ''; // 客戶篩選字串(含此字串的客戶)
+let modelKw = '';    // 機種篩選字串(含此字串的機種)
 let sortKey = store.get('prm.sort', DEFAULT_SORT); // 排序方式(會記住上次的選擇)
 if (!(sortKey in SORTS)) sortKey = DEFAULT_SORT;
 let sortDir = store.get('prm.sortDir', DEFAULT_DIR); // 'asc' 遞增 / 'desc' 遞減(會記住)
@@ -72,10 +75,12 @@ function emptyMessage() {
 }
 
 function filteredProjects() {
-  const kw = keyword.toLowerCase();
+  const ck = customerKw.toLowerCase();
+  const mk = modelKw.toLowerCase();
   return projects.filter((p) =>
     matchesFilter(p, selected) &&
-    (!kw || `${p.customer} ${p.model}`.toLowerCase().includes(kw))
+    (!ck || String(p.customer ?? '').toLowerCase().includes(ck)) &&
+    (!mk || String(p.model ?? '').toLowerCase().includes(mk))
   ).sort((a, b) => SORTS[sortKey].compare(a, b, sortDir === 'desc' ? -1 : 1));
 }
 
@@ -139,7 +144,7 @@ async function main() {
       projects = await getProjects();
       memberColors = buildMemberColors(projects);
       renderChips();
-      syncAllocBox();
+        syncAllocBox();
       render(true);
     } catch (err) {
       alert(`重新載入失敗:${err.message}`);
@@ -197,7 +202,17 @@ async function main() {
     store.set('prm.sortDir', sortDir);
     render(true);
   });
-  searchEl.addEventListener('input', () => { keyword = searchEl.value.trim(); render(true); });
+  // 客戶 / 機種兩個 combobox:下拉選項互相連動——客戶欄有篩選時,機種的選項只列出符合該客戶的機種;反之亦然
+  const optionsFor = (key, otherKey, otherKw) => {
+    const kw = otherKw.toLowerCase();
+    return [...new Set(projects
+      .filter((p) => !kw || String(p[otherKey] ?? '').toLowerCase().includes(kw))
+      .map((p) => String(p[key] ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+  };
+  attachCombobox(customerFilterEl, { getOptions: () => optionsFor('customer', 'model', modelKw) });
+  attachCombobox(modelFilterEl, { getOptions: () => optionsFor('model', 'customer', customerKw) });
+  customerFilterEl.addEventListener('input', () => { customerKw = customerFilterEl.value.trim(); render(true); });
+  modelFilterEl.addEventListener('input', () => { modelKw = modelFilterEl.value.trim(); render(true); });
   const modeEl = $('#view-mode');
   const projectIds = () => projects.map((p) => p.id);
   const syncAllocBox = () => { // 依各專案目前是否顯示成員細項,同步「顯示模式」下拉選單

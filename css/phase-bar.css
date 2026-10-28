@@ -6,8 +6,11 @@
 .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
 .toolbar .sort { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
 .toolbar .sort select {
-  font: inherit; font-size: 14px; padding: 6px 8px;
-  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); cursor: pointer;
+  box-sizing: border-box; height: 32px;
+  font: inherit; font-size: 14px; padding: 0 30px 0 8px;
+  border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background: #fff var(--select-arrow) no-repeat right 9px center / 14px 8px;
 }
 .toolbar input[type="search"] {
   font: inherit;
@@ -17,6 +20,27 @@
   border-radius: var(--radius);
   background: #fff;
 }
+/* 客戶、機種兩個可下拉 / 可輸入的篩選欄(js/components/combobox.js):▾ 永遠顯示,下拉清單與輸入框同寬、貼齊其下緣 */
+:root { --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 8'%3E%3Cpath d='M0 0h14L7 8z' fill='%23566472'/%3E%3C/svg%3E"); } /* 所有下拉選單(排序、遞增遞減、顯示模式、客戶、機種)共用的向下三角形 */
+.cb { position: relative; display: inline-block; width: 150px; } /* 寬度 */
+.cb__input {
+  box-sizing: border-box; width: 100%; height: 32px; font: inherit; font-size: 14px; padding: 0 34px 0 8px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+}
+.cb__btn {
+  position: absolute; top: 1px; bottom: 1px; right: 1px; width: 32px; padding: 0;
+  border: 0; border-radius: 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0;
+  background: var(--select-arrow) no-repeat center / 14px 8px; color: transparent; font-size: 0; cursor: pointer; /* 三角形改用與下拉選單相同的圖,文字不顯示 */
+}
+.cb__btn:hover { background-color: var(--petrol-soft); }
+.cb__list {
+  position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 2px); margin: 0; padding: 4px 0; list-style: none;
+  max-height: 260px; overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(22, 33, 43, .16);
+}
+.cb__opt { padding: 6px 12px; font-size: 14px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb__opt:hover, .cb__opt.is-active { background: var(--petrol-soft); }
+.cb__opt.is-selected { font-weight: 600; color: var(--petrol); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   font: inherit;

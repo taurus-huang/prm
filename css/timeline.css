@@ -18,7 +18,9 @@
 .toggle#alloc-toggle { border: 0; background: transparent; padding: 0; }  /* 顯示模式:不要外框 */
 #alloc-toggle select {  /* 高度與右邊「日週旬月季年」一致(32px = 按鈕 20px 行高 + 上下 5px + 外框 1px) */
   box-sizing: border-box; height: 32px; font: inherit; font-size: 14px; padding: 0 8px;
-  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink); cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); cursor: pointer;
+  appearance: none; -webkit-appearance: none; padding-right: 30px;
+  background: #fff var(--select-arrow) no-repeat right 9px center / 14px 8px;  /* 與客戶、機種 combobox 相同的三角形 */
 }
 .toggle input { accent-color: var(--petrol); width: 15px; height: 15px; margin: 0; cursor: pointer; }
 
