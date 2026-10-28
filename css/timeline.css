@@ -233,4 +233,5 @@
 
 /* 按住滑鼠拖曳時間軸可視範圍(js/components/dragPan.js) */
 .tl { cursor: grab; }
+.tl__head, .tl__label { cursor: default; } /* 日期列與專案名稱欄不能拖曳平移 */
 .tl.is-panning, .tl.is-panning * { cursor: grabbing !important; user-select: none; }
