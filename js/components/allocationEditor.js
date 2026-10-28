@@ -7,6 +7,7 @@ import { dayIndex, ymd } from '../utils/date.js';
 //  1. (edgeDrag 為 true 的頁面才有)點一下配置長條 → 外框變色(琥珀色)= 選取,此時可拖曳左右邊界:
 //     - 游標在左 / 右邊界上變成左右箭頭,並在邊界上方顯示該邊界的日期(左 = 開始日期、右 = 結束日期)
 //     - 拖左邊界只改開始日期(結束日期不動),拖右邊界只改結束日期(開始日期不動);拖曳中上方日期即時跟著變
+//     - 已在編輯模式時,再單擊長條本身(不是邊界)→ 離開編輯模式
 //     - 拖曳期間只改畫面,不寫資料庫;調整過日期後,長條旁出現「確定 / 取消」:按「確定」才寫進資料庫;
 //       按「取消」或點其他地方 → 放棄修改,外框變回原樣、不能再拖
 //  2. 雙擊配置長條 → 開啟編輯 / 刪除視窗
@@ -113,7 +114,7 @@ export function attachAllocationEditor(host, opts) {
       const id = bar.dataset.alloc;
       const handle = e.target.closest('.alloc-h');
       if (id !== selectedId) { select(id, e); return; } // 第一下只是選取
-      if (!handle) return;
+      if (!handle) { select(null, e); return; } // 已在編輯模式時,再單擊長條本身 → 離開編輯模式(有尚未按「確定」的修改就視為取消)
 
       const a0 = opts.findAllocation(id);
       const tl = host.querySelector('.tl');
@@ -168,6 +169,7 @@ export function attachAllocationEditor(host, opts) {
     if (!opts.canEdit()) return false;
     const bar = e.target.closest('[data-alloc]');
     if (bar) {
+      if (selectedId) select(null, e); // 雙擊的兩下單擊會先離開、再進入編輯模式;開啟編輯視窗時一律結束編輯模式
       const a = opts.findAllocation(bar.dataset.alloc);
       if (a) opts.openEdit(a);
       return true;
