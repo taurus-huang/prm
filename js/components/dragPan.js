@@ -4,7 +4,7 @@
 //  - 從按鈕、輸入框、配置長條、里程碑、欄寬把手等「有自己功能」的元素開始按,不會變成拖曳
 //  - 移動超過 4px 才算拖曳,所以單擊、雙擊照常運作;拖曳結束後不會誤觸發那一下 click
 //  - 時間軸自己有捲軸就捲它;窄螢幕時時間軸沒有捲軸,垂直方向改捲整個網頁
-const SKIP = '.tl__head, .tl__label, button, input, select, textarea, a, .tl__resize, .tl__today-arrow, [data-alloc], .tl__ms, .alloc-h';
+const SKIP = '.tl__head, .tl__label, button, input, select, textarea, a, .tl__resize, .tl__today-arrow, [data-alloc], .tl__ms, .alloc-h, .pbar-h';
 const THRESHOLD = 4;
 
 export function attachDragPan(host) {

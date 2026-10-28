@@ -228,8 +228,8 @@ function renderRow(row, ctx) {
         <b class="tl__mn">${escapeHtml(m.name)}</b>
       </span>`).join('');
     track = `
-      <div class="tl__bar tl__bar--${barStyle}" style="left:${left.toFixed(1)}px;width:${width.toFixed(1)}px"
-        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}"></div>${ctx.isShown(p.id) ? renderAllocs(lanes, x, ppd, ctx.colors, p.id, ctx.canEdit) : ctx.showSum ? renderSum(lanes, x, ppd) : ''}${markers}`;
+      <div class="tl__bar tl__bar--${barStyle}"${ctx.canEdit ? ` data-pbar="${escapeHtml(p.id)}" data-pf="${ext.from}" data-pt="${ext.to}"` : ''} style="left:${left.toFixed(1)}px;width:${width.toFixed(1)}px"
+        title="${escapeHtml(p.model)}:${ymd(ext.from)} ~ ${ymd(ext.to)}${ctx.canEdit ? '(單擊外框可拖曳調整開始 / 結束日期)' : ''}">${ctx.canEdit ? '<i class="pbar-h" data-h="l"></i><i class="pbar-h" data-h="r"></i>' : ''}</div>${ctx.isShown(p.id) ? renderAllocs(lanes, x, ppd, ctx.colors, p.id, ctx.canEdit) : ctx.showSum ? renderSum(lanes, x, ppd) : ''}${markers}`;
   }
 
   return `

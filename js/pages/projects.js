@@ -17,6 +17,7 @@ import { openProjectDialog } from '../components/projectDialog.js';
 import { openAllocationDialog } from '../components/allocationDialog.js';
 import { openRowMenu } from '../components/rowMenu.js';
 import { attachMilestoneEditor } from '../components/milestoneEditor.js';
+import { attachProjectBarEditor } from '../components/projectBarEditor.js';
 import { attachAllocationEditor } from '../components/allocationEditor.js';
 import { SORTS, DEFAULT_SORT, DEFAULT_DIR } from '../utils/sort.js';
 
@@ -47,6 +48,7 @@ if (!VIEW_MODES.includes(viewMode)) viewMode = 'detail';
 const rowToggle = createRowToggle(viewMode === 'detail'); // 以「是否顯示成員細項」記錄;雙擊個別專案可單獨切換
 let memberColors = new Map();
 let allocEditor = null; // 人力配置長條編輯(僅管理員),在 main() 裡建立
+let pbarEditor = null; // 專案長條開始 / 結束日期編輯(僅管理員),在 main() 裡建立
 let msEditor = null; // 里程碑編輯(僅管理員),在 main() 裡建立
 let canEdit = false; // 只有管理員(app_metadata.role = 'admin')能新增 / 編輯 / 刪除專案;其他帳號為唯讀
 // 「專案」欄的寬度(使用者拖曳調整後會記住;預設 LABEL_W)
@@ -103,6 +105,7 @@ function render(keepCenter = false, anchor = null) {
   attachBarLabels(tl); // 名稱標在「目前看得到的最左邊那一段」,捲動時即時更新
   allocEditor?.reapplySelection(); // 人力配置編輯:重畫後保持選取中的長條
   msEditor?.reapplySelection(); // 里程碑編輯:重畫後保持選取中的菱形
+  pbarEditor?.reapplySelection(); // 專案長條編輯:重畫後保持選取中的長條
 }
 
 async function main() {
@@ -170,6 +173,11 @@ async function main() {
     blankArea: (e, row) => !!e.target.closest('.tl__bar') && rowToggle.isOn(row.dataset.id),
     openEdit: (allocation) => openAllocationDialog({ allocation, projectId: allocation.project_id, onDone: reloadAfterAlloc }),
     openAdd: (projectId, startDate) => openAllocationDialog({ projectId, startDate, onDone: reloadAfterAlloc }),
+  });
+  pbarEditor = attachProjectBarEditor(timelineEl, {
+    canEdit: () => canEdit,
+    findProject: (id) => projects.find((p) => p.id === id),
+    refresh: (anchor) => render(true, anchor),
   });
   msEditor = attachMilestoneEditor(timelineEl, {
     canEdit: () => canEdit,

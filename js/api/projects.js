@@ -68,3 +68,9 @@ export async function deleteProject(id) {
   const { error } = await supabase.from('projects').delete().eq('id', id);
   if (error) throw error;
 }
+
+// 只更新專案的開始 / 結束日期(時間軸上拖曳專案長條邊界後用)
+export async function updateProjectDates(id, startDate, endDate) {
+  const { error } = await supabase.from('projects').update({ start_date: clean(startDate), end_date: clean(endDate), updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw error;
+}

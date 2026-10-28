@@ -96,6 +96,13 @@
 .tl__alloc.is-selected, .rs__bar.is-selected { z-index: 2; filter: none; animation: alloc-blink 1s ease-in-out infinite; }
 @keyframes alloc-blink { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
 .alloc-h { position: absolute; top: 0; bottom: 0; width: 8px; pointer-events: none; z-index: 1; }
+.pbar-h { position: absolute; top: -2px; bottom: -2px; width: 8px; pointer-events: none; z-index: 1; } /* 專案長條的邊界把手(位置在外框上) */
+.pbar-h[data-h="l"] { left: -6px; }
+.pbar-h[data-h="r"] { right: -6px; }
+.is-selected > .pbar-h { pointer-events: auto; cursor: ew-resize; }
+/* 選取中的專案長條:外框閃爍(dimming);層級要比名稱欄(z-index 3)低 */
+.tl__bar.is-selected { z-index: 2; animation: alloc-blink 1s ease-in-out infinite; }
+.tl__bar.is-dragging { animation: none; opacity: .6; }
 .alloc-h[data-h="l"] { left: -4px; }
 .alloc-h[data-h="r"] { right: -4px; }
 .is-selected > .alloc-h { pointer-events: auto; cursor: ew-resize; }
