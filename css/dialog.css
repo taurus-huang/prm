@@ -9,6 +9,7 @@
 .dlg__form { position: relative; display: flex; flex-direction: column; max-height: calc(100vh - 24px); }
 .dlg__head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); }
 .dlg__head h2 { font-size: 18px; }
+.dlg__head, .mspop > strong { cursor: move; user-select: none; } /* 拖曳標題列可移動視窗(popupDrag.js) */
 .dlg__x { border: 0; background: none; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: var(--radius); }
 .dlg__x:hover { background: var(--petrol-soft); color: var(--ink); }
 .dlg__body { padding: 16px 20px; overflow: auto; display: grid; gap: 14px; }

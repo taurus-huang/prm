@@ -6,6 +6,7 @@ import { attachTodayLine } from '../components/todayLine.js';
 import { attachBarLabels } from '../components/barLabels.js';
 import { attachWheelZoom } from '../components/wheelZoom.js';
 import { attachDragPan } from '../components/dragPan.js';
+import { attachPopupDrag } from '../components/popupDrag.js';
 import { captureAnchor, restoreAnchor } from '../components/scrollAnchor.js';
 import { attachColumnResize } from '../components/columnResize.js';
 import { getLabelW, MIN_LABEL_W } from '../components/timeAxis.js';
@@ -248,6 +249,7 @@ async function main() {
     syncAllocBox();
     render(true, anchor);
   });
+  attachPopupDrag(); // 所有 popup 視窗都能拖曳標題列移動位置
   attachDragPan(timelineEl); // 按住滑鼠左鍵拖曳,上下左右移動可視範圍
   attachWheelZoom(timelineEl, { // Ctrl + 滑鼠滾輪調整日期尺度
     getKey: () => zoom,
