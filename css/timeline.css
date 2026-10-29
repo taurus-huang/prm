@@ -245,3 +245,9 @@
   padding: 0 6px; border: 1px solid var(--line); border-radius: 4px;
   background: #fff; color: var(--ink); font-size: 11px; line-height: 16px; font-variant-numeric: tabular-nums;
 }
+
+/* 觸控裝置(手機)橫式:螢幕高度本來就小,時間軸區域改成幾乎等於整個可視高度,
+   往下滑動頁面後,整個可視區都是時間軸;電腦(滑鼠)瀏覽器不受影響 */
+@media (pointer: coarse) and (orientation: landscape) {
+  .tl { max-height: calc(100vh - 80px); max-height: calc(100dvh - 80px); }
+}
