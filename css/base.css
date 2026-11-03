@@ -27,6 +27,9 @@ body {
 h1, h2 { margin: 0; line-height: 1.25; }
 a { color: var(--petrol); }
 :focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+/* 所有 ComboBox(下拉選單、可輸入的 combobox)選取 / 聚焦時不顯示橘黃色外框;改以邊框變成主色表示聚焦 */
+select:focus-visible, input[list]:focus-visible, .cb__input:focus-visible, .cb__btn:focus-visible { outline: none; }
+select:focus-visible, input[list]:focus-visible, .cb__input:focus-visible { border-color: var(--petrol); }
 
 .btn {
   font: inherit;
